@@ -1362,6 +1362,13 @@
   gap: 12px;
 }
 
+.live-session-settings-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
 .live-session-settings-section-title {
   margin: 0;
   font-size: 0.68rem;
@@ -1369,6 +1376,24 @@
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: rgba(63, 183, 200, 0.85);
+}
+
+.live-session-settings-link-btn {
+  flex-shrink: 0;
+  border-radius: 8px;
+  border: 1px solid rgba(63, 183, 200, 0.28);
+  background: rgba(63, 183, 200, 0.1);
+  color: rgba(239, 248, 243, 0.86);
+  padding: 5px 9px;
+  font-size: 0.7rem;
+  font-weight: 850;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.live-session-settings-link-btn:hover {
+  border-color: rgba(63, 183, 200, 0.45);
+  background: rgba(63, 183, 200, 0.16);
 }
 
 .live-session-settings-label {
@@ -1391,6 +1416,48 @@
 .live-session-settings-field .live-session-settings-hint {
   grid-column: 2;
   margin-top: 0;
+}
+
+.live-session-settings-check-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding-left: calc(7.75rem + 14px);
+  margin-top: -4px;
+}
+
+.live-session-settings-btn--compact {
+  min-height: 28px;
+  padding: 5px 9px;
+  border-radius: 8px;
+  font-size: 0.72rem;
+}
+
+.live-session-settings-check-status {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.live-session-settings-check-status--checking {
+  color: rgba(239, 248, 243, 0.58);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.live-session-settings-check-status--ok {
+  color: rgba(107, 245, 178, 0.9);
+  background: rgba(107, 245, 178, 0.12);
+}
+
+.live-session-settings-check-status--fail {
+  color: rgba(255, 140, 140, 0.9);
+  background: rgba(255, 140, 140, 0.12);
 }
 
 @media (max-width: 680px) {
@@ -1419,6 +1486,10 @@
 
   .live-session-settings-field .live-session-settings-hint {
     grid-column: 1;
+  }
+
+  .live-session-settings-check-row {
+    padding-left: 0;
   }
 }
 
@@ -1460,6 +1531,11 @@
   font-size: 0.88rem;
   cursor: pointer;
   border: 1px solid transparent;
+}
+
+.live-session-settings-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .live-session-settings-btn--ghost {

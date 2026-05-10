@@ -16,6 +16,7 @@ import { generateHintPayload, hintPanelsAtLevel, type HintPayload } from '../lib
 import { liveVoiceScriptTitleLine } from '../lib/liveVoiceMeta';
 import { buildScenarioFromLiveSetup, FREE_VOICE_SCENARIO_ID } from '../lib/liveVoiceFreeScenario';
 import { translateLineToVi } from '../lib/translateLineVi';
+import { modelsListUrl } from '../lib/endpoints';
 
 const liveFieldSx: CSSProperties = {
   width: '100%',
@@ -53,6 +54,7 @@ const LIVE_VOICE_NEVER_VISIBLE_CAPTION_LINES = new Set(['Live']);
 const LIVE_VOICE_MIC_AMBIENT_CAPTION_LINES = new Set(['Speak…', 'Speak...', 'Ready for next turn']);
 
 type Particle3 = { x: number; y: number; z: number };
+type ConnectionCheckStatus = 'idle' | 'checking' | 'ok' | 'fail';
 
 const fract01 = (x: number) => x - Math.floor(x);
 
@@ -406,6 +408,10 @@ function LiveVoiceInner({
   const [hintViText, setHintViText] = useState('');
   const [liveSessionSettingsOpen, setLiveSessionSettingsOpen] = useState(false);
   const [settingsDraft, setSettingsDraft] = useState<StoredSettings | null>(null);
+  const [settingsConnectionCheck, setSettingsConnectionCheck] = useState<{
+    realtime: ConnectionCheckStatus;
+    hint: ConnectionCheckStatus;
+  }>({ realtime: 'idle', hint: 'idle' });
   const [topicPickerOpen, setTopicPickerOpen] = useState(false);
   const [topicPickerEntered, setTopicPickerEntered] = useState(false);
   const topicPickerCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -413,12 +419,14 @@ function LiveVoiceInner({
 
   const openLiveSettings = useCallback(() => {
     setSettingsDraft(settings);
+    setSettingsConnectionCheck({ realtime: 'idle', hint: 'idle' });
     setLiveSessionSettingsOpen(true);
   }, [settings]);
 
   const closeLiveSettingsModal = useCallback(() => {
     setLiveSessionSettingsOpen(false);
     setSettingsDraft(null);
+    setSettingsConnectionCheck({ realtime: 'idle', hint: 'idle' });
   }, []);
 
   const requestCloseTopicPicker = useCallback(() => {
@@ -445,6 +453,41 @@ function LiveVoiceInner({
   const patchSettingsDraft = useCallback((partial: Partial<StoredSettings>) => {
     setSettingsDraft((d) => (d ? { ...d, ...partial } : d));
   }, []);
+
+  const checkRealtimeConnection = useCallback(async () => {
+    const apiKey = settingsDraft?.realtimeApiKey.trim();
+    if (!apiKey) {
+      setSettingsConnectionCheck((s) => ({ ...s, realtime: 'fail' }));
+      return;
+    }
+    setSettingsConnectionCheck((s) => ({ ...s, realtime: 'checking' }));
+    try {
+      const res = await fetch(modelsListUrl('https://api.openai.com/v1'), {
+        headers: { Authorization: `Bearer ${apiKey}` },
+      });
+      setSettingsConnectionCheck((s) => ({ ...s, realtime: res.ok ? 'ok' : 'fail' }));
+    } catch {
+      setSettingsConnectionCheck((s) => ({ ...s, realtime: 'fail' }));
+    }
+  }, [settingsDraft?.realtimeApiKey]);
+
+  const checkHintConnection = useCallback(async () => {
+    const baseUrl = settingsDraft?.hintBaseUrl.trim();
+    const apiKey = settingsDraft?.hintApiKey.trim();
+    if (!baseUrl || !settingsDraft?.hintModel.trim()) {
+      setSettingsConnectionCheck((s) => ({ ...s, hint: 'fail' }));
+      return;
+    }
+    setSettingsConnectionCheck((s) => ({ ...s, hint: 'checking' }));
+    try {
+      const headers: HeadersInit = {};
+      if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
+      const res = await fetch(modelsListUrl(baseUrl), { headers });
+      setSettingsConnectionCheck((s) => ({ ...s, hint: res.ok ? 'ok' : 'fail' }));
+    } catch {
+      setSettingsConnectionCheck((s) => ({ ...s, hint: 'fail' }));
+    }
+  }, [settingsDraft?.hintApiKey, settingsDraft?.hintBaseUrl, settingsDraft?.hintModel]);
 
   const saveLiveSettings = useCallback(() => {
     if (!settingsDraft) return;
@@ -1242,7 +1285,18 @@ function LiveVoiceInner({
                 <>
                 <div className="live-session-settings-grid">
                   <div className="live-session-settings-section">
-                    <p className="live-session-settings-section-title">Realtime (OpenAI)</p>
+                    <div className="live-session-settings-section-head">
+                      <p className="live-session-settings-section-title">Realtime (OpenAI)</p>
+                      <a
+                        className="live-session-settings-link-btn"
+                        href="https://platform.openai.com/api-keys"
+                        target="_blank"
+                        rel="noreferrer"
+                        aria-label="Open OpenAI API keys page"
+                      >
+                        Get key
+                      </a>
+                    </div>
                     <label className="live-session-settings-field">
                       <span className="live-session-settings-label">API key</span>
                       <input
@@ -1250,7 +1304,10 @@ function LiveVoiceInner({
                         autoComplete="off"
                         style={liveFieldSx}
                         value={settingsDraft.realtimeApiKey}
-                        onChange={(e) => patchSettingsDraft({ realtimeApiKey: e.target.value })}
+                        onChange={(e) => {
+                          patchSettingsDraft({ realtimeApiKey: e.target.value });
+                          setSettingsConnectionCheck((s) => ({ ...s, realtime: 'idle' }));
+                        }}
                         placeholder="sk-…"
                         aria-label="OpenAI API key"
                       />
@@ -1284,6 +1341,39 @@ function LiveVoiceInner({
                       </select>
                       <span className="live-session-settings-hint">Realtime picks this up on your next connection.</span>
                     </label>
+                    <div className="live-session-settings-check-row">
+                      <button
+                        type="button"
+                        className="live-session-settings-btn live-session-settings-btn--ghost live-session-settings-btn--compact"
+                        disabled={settingsConnectionCheck.realtime === 'checking'}
+                        onClick={checkRealtimeConnection}
+                        aria-label="Check Realtime API key"
+                      >
+                        Check
+                      </button>
+                      {settingsConnectionCheck.realtime !== 'idle' ? (
+                        <span
+                          className={`live-session-settings-check-status live-session-settings-check-status--${settingsConnectionCheck.realtime}`}
+                          role="status"
+                          aria-label={
+                            settingsConnectionCheck.realtime === 'checking'
+                              ? 'Checking Realtime connection'
+                              : settingsConnectionCheck.realtime === 'ok'
+                                ? 'Realtime connection reachable'
+                                : 'Realtime connection failed'
+                          }
+                          title={
+                            settingsConnectionCheck.realtime === 'checking'
+                              ? 'Checking...'
+                              : settingsConnectionCheck.realtime === 'ok'
+                                ? 'Reachable'
+                                : 'Cannot reach API'
+                          }
+                        >
+                          {settingsConnectionCheck.realtime === 'checking' ? '...' : settingsConnectionCheck.realtime === 'ok' ? '✓' : '!'}
+                        </span>
+                      ) : null}
+                    </div>
                     <label className="live-session-settings-field">
                       <span className="live-session-settings-label">Cooldown (sec)</span>
                       <input
@@ -1306,7 +1396,10 @@ function LiveVoiceInner({
                         autoComplete="off"
                         style={liveFieldSx}
                         value={settingsDraft.hintApiKey}
-                        onChange={(e) => patchSettingsDraft({ hintApiKey: e.target.value })}
+                        onChange={(e) => {
+                          patchSettingsDraft({ hintApiKey: e.target.value });
+                          setSettingsConnectionCheck((s) => ({ ...s, hint: 'idle' }));
+                        }}
                         aria-label="Hint API key"
                       />
                     </label>
@@ -1315,7 +1408,10 @@ function LiveVoiceInner({
                       <input
                         style={liveFieldSx}
                         value={settingsDraft.hintBaseUrl}
-                        onChange={(e) => patchSettingsDraft({ hintBaseUrl: e.target.value })}
+                        onChange={(e) => {
+                          patchSettingsDraft({ hintBaseUrl: e.target.value });
+                          setSettingsConnectionCheck((s) => ({ ...s, hint: 'idle' }));
+                        }}
                         placeholder="https://api.openai.com/v1"
                         aria-label="Hint base URL"
                       />
@@ -1325,10 +1421,46 @@ function LiveVoiceInner({
                       <input
                         style={liveFieldSx}
                         value={settingsDraft.hintModel}
-                        onChange={(e) => patchSettingsDraft({ hintModel: e.target.value })}
+                        onChange={(e) => {
+                          patchSettingsDraft({ hintModel: e.target.value });
+                          setSettingsConnectionCheck((s) => ({ ...s, hint: 'idle' }));
+                        }}
                         aria-label="Hint model"
                       />
                     </label>
+                    <div className="live-session-settings-check-row">
+                      <button
+                        type="button"
+                        className="live-session-settings-btn live-session-settings-btn--ghost live-session-settings-btn--compact"
+                        disabled={settingsConnectionCheck.hint === 'checking'}
+                        onClick={checkHintConnection}
+                        aria-label="Check hint API connection"
+                      >
+                        Check
+                      </button>
+                      {settingsConnectionCheck.hint !== 'idle' ? (
+                        <span
+                          className={`live-session-settings-check-status live-session-settings-check-status--${settingsConnectionCheck.hint}`}
+                          role="status"
+                          aria-label={
+                            settingsConnectionCheck.hint === 'checking'
+                              ? 'Checking hint connection'
+                              : settingsConnectionCheck.hint === 'ok'
+                                ? 'Hint connection reachable'
+                                : 'Hint connection failed'
+                          }
+                          title={
+                            settingsConnectionCheck.hint === 'checking'
+                              ? 'Checking...'
+                              : settingsConnectionCheck.hint === 'ok'
+                                ? 'Reachable'
+                                : 'Cannot reach API'
+                          }
+                        >
+                          {settingsConnectionCheck.hint === 'checking' ? '...' : settingsConnectionCheck.hint === 'ok' ? '✓' : '!'}
+                        </span>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
                 <div className="live-session-settings-display-section">
@@ -1631,11 +1763,10 @@ function LiveVoiceInner({
               const showAiHint = Boolean(hintPack && hintEnJoined.trim());
               const showHintLoading = hintApiConfigured && hintLoading && !showAiHint;
               const offlineLine = offlineHintRailLine.trim();
-              const showOfflineFallback =
-                Boolean(offlineLine) &&
-                (!hintApiConfigured || (hintAiAttemptedRef.current && !hintLoading && !showAiHint));
+              const showOfflineFallback = Boolean(offlineLine) && !hintApiConfigured;
+              const showHintUnavailable = hintApiConfigured && hintAiAttemptedRef.current && !hintLoading && !showAiHint;
 
-              if (!showAiHint && !showHintLoading && !showOfflineFallback) return null;
+              if (!showAiHint && !showHintLoading && !showOfflineFallback && !showHintUnavailable) return null;
 
               return (
                 <div className="live-hint-stack">
@@ -1662,11 +1793,17 @@ function LiveVoiceInner({
                   ) : null}
                   {showOfflineFallback ? (
                     <div className="live-hint-card">
-                      <span className="live-voice-caption-tag live-hint-rail-tag">
-                        {hintApiConfigured ? 'Scenario fallback' : 'Phrases'}
-                      </span>
+                      <span className="live-voice-caption-tag live-hint-rail-tag">Phrases</span>
                       <p className="live-hint-card-p live-hint-card-p--primary" lang="en">
                         {offlineLine}
+                      </p>
+                    </div>
+                  ) : null}
+                  {showHintUnavailable ? (
+                    <div className="live-hint-card">
+                      <span className="live-voice-caption-tag live-hint-rail-tag">Hint unavailable</span>
+                      <p className="live-hint-card-p live-hint-card-p--primary" role="status" aria-live="polite">
+                        Check the Hint API key or model in settings.
                       </p>
                     </div>
                   ) : null}
