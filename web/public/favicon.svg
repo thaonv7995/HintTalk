@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <title>HintTalk</title>
+  <rect width="32" height="32" rx="8" fill="#11231f"/>
+  <g fill="#3fb7c8">
+    <rect x="6.75" y="8" width="18.5" height="12.25" rx="3.5"/>
+    <path d="M13.65 20.25h9.06L17.93 26.15 13.65 20.25z"/>
+  </g>
+  <circle cx="21.6" cy="11.4" r="1.9" fill="#f3d36c"/>
+  <path
+    stroke="#dff4e8"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    fill="none"
+    d="M11.25 13.15h9.5M11.25 16.2h5.75"
+  />
+</svg>

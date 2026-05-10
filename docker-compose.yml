@@ -1,0 +1,10 @@
+services:
+  hinttalk:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${HINTTALK_PORT:-21079}:21079"
+    environment:
+      PORT: "21079"
+    restart: unless-stopped
