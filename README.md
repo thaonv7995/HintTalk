@@ -4,6 +4,37 @@ HintTalk is a local-first English speaking practice app focused on **Live Voice*
 
 ![HintTalk Live Voice](docs/assets/live-voice-preview.png)
 
+## Security Notes
+
+HintTalk is designed for personal/local use. It does **not** include a backend account system or encrypted key vault.
+
+Important details about API key storage:
+
+- Keys entered in the app are saved in your browser `localStorage`.
+- `localStorage` is readable by JavaScript running on this app origin.
+- Anyone with access to your browser profile, devtools, disk profile data, or an unlocked machine may be able to read the stored key.
+- Browser sync, backup tools, malware, extensions, or shared user accounts may increase exposure risk.
+- Do not use this setup on a shared/public computer.
+- Do not deploy this app publicly with user-supplied browser-stored keys.
+- Do not commit API keys or paste them into screenshots, logs, issues, or chat.
+
+Recommended usage:
+
+- Use a dedicated OpenAI project/key for HintTalk.
+- Set conservative project limits/budgets in your OpenAI account.
+- Rotate or delete the key if you suspect it was exposed.
+- For public or team deployment, move API calls server-side and store keys in server environment variables or a managed secrets system.
+
+How to remove stored keys from this app:
+
+1. Open `/live-voice`.
+2. Click the gear icon.
+3. Clear the API key fields and save.
+
+You can also clear the site data in your browser settings, or remove the `hinttalk.settings.v1` entry from devtools `Application` -> `Local storage`.
+
+The bundled `/openai` proxy is scoped for local/personal use and only forwards the OpenAI endpoints used by this app.
+
 ## Requirements
 
 - Node.js 22+
@@ -11,7 +42,7 @@ HintTalk is a local-first English speaking practice app focused on **Live Voice*
 - Docker + Docker Compose, if running the container
 - An OpenAI API key for live voice and model-backed hints
 
-API keys are entered in the app UI and stored in browser `localStorage` on your device. This setup is intended for personal/local use, not public multi-user hosting.
+API keys are entered in the app UI and stored in browser `localStorage` on your device. Read the security notes above before using a real key.
 
 ## Get an OpenAI API Key
 
@@ -113,14 +144,6 @@ http://localhost:9000/live-voice
    - Hint model: default is `gpt-4o-mini`.
 4. Save settings.
 5. Click the mic button to start a live voice session.
-
-## Security Notes
-
-- Do not commit API keys.
-- Do not share screenshots that reveal API keys.
-- This app stores keys in browser `localStorage`.
-- The bundled `/openai` proxy is scoped for local/personal use and only forwards the OpenAI endpoints used by this app.
-- For public or team deployment, move API keys server-side and add user authentication.
 
 ## Useful Commands
 
