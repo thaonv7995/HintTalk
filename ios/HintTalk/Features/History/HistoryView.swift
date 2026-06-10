@@ -104,7 +104,7 @@ struct SessionDetailView: View {
                 }
             }
         }
-        .onDisappear { player.stop() }
+        .onDisappear { player.releaseAudioSession() }
     }
 
     @ViewBuilder

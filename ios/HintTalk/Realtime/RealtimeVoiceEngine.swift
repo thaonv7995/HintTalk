@@ -30,6 +30,8 @@ final class RealtimeVoiceEngine: NSObject {
     private let audioEngine = AVAudioEngine()
     private let playerNode = AVAudioPlayerNode()
     private var inputConverter: AVAudioConverter?
+    private var configObserver: NSObjectProtocol?
+    private var interruptionObserver: NSObjectProtocol?
     private let lock = NSLock()
     private var pendingOutputBuffers = 0
     private var responseActive = false
@@ -229,9 +231,49 @@ final class RealtimeVoiceEngine: NSObject {
         audioEngine.prepare()
         try audioEngine.start()
         playerNode.play()
+
+        // Category/route changes (e.g. coming from history playback) can stop a
+        // freshly started engine; restart it so scheduled AI audio keeps playing.
+        configObserver = NotificationCenter.default.addObserver(
+            forName: .AVAudioEngineConfigurationChange,
+            object: audioEngine,
+            queue: .main
+        ) { [weak self] _ in
+            self?.restartEngineIfNeeded()
+        }
+        interruptionObserver = NotificationCenter.default.addObserver(
+            forName: AVAudioSession.interruptionNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] note in
+            guard let info = note.userInfo,
+                  let raw = info[AVAudioSessionInterruptionTypeKey] as? UInt,
+                  AVAudioSession.InterruptionType(rawValue: raw) == .ended
+            else { return }
+            try? AVAudioSession.sharedInstance().setActive(true)
+            self?.restartEngineIfNeeded()
+        }
+    }
+
+    private func restartEngineIfNeeded() {
+        guard !closed else { return }
+        if !audioEngine.isRunning {
+            try? audioEngine.start()
+        }
+        if audioEngine.isRunning, !playerNode.isPlaying {
+            playerNode.play()
+        }
     }
 
     private func stopAudio() {
+        if let configObserver {
+            NotificationCenter.default.removeObserver(configObserver)
+            self.configObserver = nil
+        }
+        if let interruptionObserver {
+            NotificationCenter.default.removeObserver(interruptionObserver)
+            self.interruptionObserver = nil
+        }
         playerNode.stop()
         audioEngine.inputNode.removeTap(onBus: 0)
         audioEngine.stop()
@@ -324,9 +366,7 @@ final class RealtimeVoiceEngine: NSObject {
                 }
             }
         }
-        if !playerNode.isPlaying, audioEngine.isRunning {
-            playerNode.play()
-        }
+        restartEngineIfNeeded()
     }
 
     private static func rms(of buffer: AVAudioPCMBuffer) -> Float {

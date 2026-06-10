@@ -42,6 +42,13 @@ final class ConversationPlayer: NSObject {
         queue = []
     }
 
+    /// Call when leaving the screen so the `.playback` session does not linger
+    /// and conflict with the live-voice engine's `.playAndRecord` session.
+    func releaseAudioSession() {
+        stop()
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+    }
+
     private func playNext() {
         guard isPlayingAll, !queue.isEmpty else {
             stop()

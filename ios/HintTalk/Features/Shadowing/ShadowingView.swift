@@ -313,6 +313,6 @@ struct ShadowingResultsView: View {
             .padding(.horizontal, 18)
             .padding(.bottom, 24)
         }
-        .onDisappear { player.stop() }
+        .onDisappear { player.releaseAudioSession() }
     }
 }
