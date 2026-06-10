@@ -204,9 +204,12 @@ final class RealtimeVoiceEngine: NSObject {
 
     private func startAudio() throws {
         let session = AVAudioSession.sharedInstance()
+        // `.default` mode keeps full media playback volume; `.voiceChat` applies
+        // call-style gain reduction that makes the AI voice very quiet on device.
+        // Echo is acceptable because the mic stream is muted while the AI speaks.
         try session.setCategory(
             .playAndRecord,
-            mode: .voiceChat,
+            mode: .default,
             options: [.defaultToSpeaker, .allowBluetoothHFP, .allowBluetoothA2DP]
         )
         try session.setPreferredSampleRate(48000)

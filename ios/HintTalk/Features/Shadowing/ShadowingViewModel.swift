@@ -81,14 +81,8 @@ final class ShadowingViewModel: NSObject {
             return
         }
 
-        do {
-            let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker])
-            try session.setActive(true)
-        } catch {
-            errorMessage = "Audio session failed: \(error.localizedDescription)"
-            return
-        }
+        // Category is switched per phase: `.playback` for model lines (full speaker
+        // volume on device) and `.playAndRecord` only while capturing the learner.
 
         discardUnsavedAudio()
         lineIndex = 0
@@ -176,6 +170,10 @@ final class ShadowingViewModel: NSObject {
     private func playModelLine(_ text: String) async {
         modelPlaybackStart = Date()
 
+        let session = AVAudioSession.sharedInstance()
+        try? session.setCategory(.playback, mode: .spokenAudio)
+        try? session.setActive(true)
+
         if settings.useOpenAiTts, !settings.realtimeApiKey.trimmed.isEmpty {
             do {
                 let data = try await AudioApiClient.speech(
@@ -196,6 +194,7 @@ final class ShadowingViewModel: NSObject {
             let utterance = AVSpeechUtterance(string: text)
             utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
             utterance.rate = 0.48
+            utterance.volume = 1.0
             synthesizer.speak(utterance)
         }
         modelDurationMs = Date().timeIntervalSince(modelPlaybackStart ?? Date()) * 1000
@@ -219,6 +218,10 @@ final class ShadowingViewModel: NSObject {
     }
 
     private func startRecording() {
+        let session = AVAudioSession.sharedInstance()
+        try? session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker])
+        try? session.setActive(true)
+
         recordingStart = Date()
         let settings: [String: Any] = [
             AVFormatIDKey: kAudioFormatMPEG4AAC,
