@@ -448,7 +448,17 @@ final class LiveVoiceViewModel {
                     level: level,
                     turns: turnsSnapshot,
                     currentAiLine: currentAiLine,
-                    speaksFirst: speaksFirst
+                    speaksFirst: speaksFirst,
+                    onPartial: { partial in
+                        // Show the hint as it streams in (~1s instead of 3-5s).
+                        Task { @MainActor [weak self] in
+                            // hintLoading flips false when this hint task is
+                            // cancelled/finished — blocks stale partials.
+                            guard let self, self.hintLoading else { return }
+                            self.hintText = partial
+                            self.hintError = nil
+                        }
+                    }
                 )
                 guard !Task.isCancelled else { return }
                 self.hintText = hint

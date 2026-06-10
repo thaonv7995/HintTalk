@@ -32,6 +32,7 @@ targets:
           UIColorName: LaunchBackground
         UIUserInterfaceStyle: Dark
         NSMicrophoneUsageDescription: HintTalk uses the microphone for live English role-play conversations and shadowing practice.
+        NSSpeechRecognitionUsageDescription: HintTalk transcribes your shadowing recordings on-device to score pronunciation accuracy without sending audio anywhere.
         UIBackgroundModes:
           - audio
         UISupportedInterfaceOrientations:

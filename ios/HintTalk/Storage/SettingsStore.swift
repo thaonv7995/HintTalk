@@ -42,6 +42,8 @@ final class SettingsStore {
     var shadowingGapSeconds: Double { didSet { save("shadowingGapSeconds", shadowingGapSeconds) } }
     /// Model-line playback speed multiplier (0.75 = slower listening practice).
     var shadowingRate: Double { didSet { save("shadowingRate", shadowingRate) } }
+    /// Prefer free on-device speech recognition over the Whisper API for scoring.
+    var useOnDeviceStt: Bool { didSet { save("useOnDeviceStt", useOnDeviceStt) } }
     var useOpenAiTts: Bool { didSet { save("useOpenAiTts", useOpenAiTts) } }
     var ttsModel: String { didSet { save("ttsModel", ttsModel) } }
     var ttsVoice: String { didSet { save("ttsVoice", ttsVoice) } }
@@ -79,6 +81,7 @@ final class SettingsStore {
         sttModel = d.string(forKey: "sttModel") ?? "gpt-4o-mini-transcribe"
         shadowingGapSeconds = d.object(forKey: "shadowingGapSeconds") as? Double ?? 3
         shadowingRate = d.object(forKey: "shadowingRate") as? Double ?? 1.0
+        useOnDeviceStt = d.object(forKey: "useOnDeviceStt") as? Bool ?? true
         useOpenAiTts = d.object(forKey: "useOpenAiTts") as? Bool ?? false
         ttsModel = d.string(forKey: "ttsModel") ?? "gpt-4o-mini-tts"
         ttsVoice = d.string(forKey: "ttsVoice") ?? "alloy"

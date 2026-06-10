@@ -269,11 +269,13 @@ final class ShadowingViewModel: NSObject {
         }
 
         let apiKey = settings.realtimeApiKey.trimmed
-        guard !apiKey.isEmpty else {
+        let useOnDevice = settings.useOnDeviceStt
+        guard useOnDevice || !apiKey.isEmpty else {
             var result = ShadowingScorer.score(
                 lineId: line.id, target: line.text, transcript: "",
                 modelMs: modelMs, captureMs: captureMs,
-                captureFailed: true, captureError: "No API key for transcription"
+                captureFailed: true,
+                captureError: "Enable on-device transcription or add an API key in Settings"
             )
             result.audioFile = storedFile
             appendResult(result)
@@ -302,8 +304,8 @@ final class ShadowingViewModel: NSObject {
             }
             var result: ShadowingLineResult
             do {
-                let transcript = try await AudioApiClient.transcribe(
-                    apiKey: apiKey, model: sttModel, audioFileURL: transcribeURL
+                let transcript = try await Self.transcribe(
+                    fileURL: transcribeURL, onDevice: useOnDevice, apiKey: apiKey, sttModel: sttModel
                 )
                 result = ShadowingScorer.score(
                     lineId: line.id, target: line.text, transcript: transcript,
@@ -319,6 +321,21 @@ final class ShadowingViewModel: NSObject {
             result.audioFile = storedFile
             self?.appendResult(result)
         }
+    }
+
+    /// On-device first (free, fast, offline); Whisper API as fallback when the
+    /// device model fails or is unavailable.
+    private static func transcribe(
+        fileURL: URL, onDevice: Bool, apiKey: String, sttModel: String
+    ) async throws -> String {
+        if onDevice {
+            do {
+                return try await SpeechTranscriber.transcribe(fileURL: fileURL)
+            } catch {
+                guard !apiKey.isEmpty else { throw error }
+            }
+        }
+        return try await AudioApiClient.transcribe(apiKey: apiKey, model: sttModel, audioFileURL: fileURL)
     }
 
     private func appendResult(_ result: ShadowingLineResult) {

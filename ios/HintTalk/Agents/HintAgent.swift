@@ -43,13 +43,29 @@ enum HintAgent {
         "- **advanced**: concise cues or keywords only (minimal scaffolding — terse reminders).",
     ].joined(separator: "\n")
 
+    /// Extracts the hint for `level` from a (possibly truncated) JSON payload.
+    /// Used both for the final result and for partial text mid-stream, where
+    /// `JSONPayload.parse` repairs the unterminated JSON.
+    private static func extractHint(from text: String, level: HintLevel) -> String? {
+        guard let parsed = JSONPayload.parse(text) else { return nil }
+        let order = [level.rawValue, "beginner", "intermediate", "advanced"]
+        for key in order {
+            if let list = parsed[key] as? [Any] {
+                let strings = list.compactMap { ($0 as? String).map(cleanHintText) }.filter { !$0.isEmpty }
+                if let first = strings.first { return first }
+            }
+        }
+        return nil
+    }
+
     static func generateHint(
         settings: SettingsStore,
         scenario: Scenario,
         level: HintLevel,
         turns: [ConversationTurn],
         currentAiLine: String,
-        speaksFirst: SpeaksFirst
+        speaksFirst: SpeaksFirst,
+        onPartial: ((String) -> Void)? = nil
     ) async throws -> String {
         let ordered = turns.suffix(maxTranscriptTurns)
         let transcript: [[String: Any]] = ordered.enumerated().map { index, turn in
@@ -77,31 +93,48 @@ enum HintAgent {
         ]
         let payloadJson = String(data: try JSONSerialization.data(withJSONObject: payload), encoding: .utf8) ?? "{}"
 
-        let text = try await ChatCompletionClient.fetch(
-            settings: settings,
-            messages: [
-                ChatMessage(role: "system", content: systemPrompt),
-                ChatMessage(
-                    role: "user",
-                    content: "Below is the HintTalk hint request as JSON. Respond with the required JSON object only.\n\(payloadJson)"
-                ),
-            ],
-            temperature: 0.28,
-            maxTokens: 2000,
-            jsonMode: true
-        )
+        let messages = [
+            ChatMessage(role: "system", content: systemPrompt),
+            ChatMessage(
+                role: "user",
+                content: "Below is the HintTalk hint request as JSON. Respond with the required JSON object only.\n\(payloadJson)"
+            ),
+        ]
 
-        guard let parsed = JSONPayload.parse(text) else {
-            throw ChatClientError.badPayload("Hint model returned no parseable JSON: \(text.trimmed.prefix(120))")
+        let text: String
+        if let onPartial {
+            // Stream so the hint shows up as soon as it forms in the JSON,
+            // instead of waiting for the full response.
+            var lastPartial = ""
+            text = try await ChatCompletionClient.fetchStreaming(
+                settings: settings,
+                messages: messages,
+                temperature: 0.28,
+                maxTokens: 2000,
+                jsonMode: true
+            ) { accumulated in
+                guard let partial = extractHint(from: accumulated, level: level),
+                      partial != lastPartial
+                else { return }
+                lastPartial = partial
+                onPartial(partial)
+            }
+        } else {
+            text = try await ChatCompletionClient.fetch(
+                settings: settings,
+                messages: messages,
+                temperature: 0.28,
+                maxTokens: 2000,
+                jsonMode: true
+            )
         }
 
         // Prefer the requested level; fall back through the rest (port of capPayloadToSingleHint).
-        let order = [level.rawValue, "beginner", "intermediate", "advanced"]
-        for key in order {
-            if let list = parsed[key] as? [Any] {
-                let strings = list.compactMap { ($0 as? String).map(cleanHintText) }.filter { !$0.isEmpty }
-                if let first = strings.first { return first }
-            }
+        if let hint = extractHint(from: text, level: level) {
+            return hint
+        }
+        if JSONPayload.parse(text) == nil {
+            throw ChatClientError.badPayload("Hint model returned no parseable JSON: \(text.trimmed.prefix(120))")
         }
         throw ChatClientError.badPayload("Hint model returned empty hint arrays")
     }

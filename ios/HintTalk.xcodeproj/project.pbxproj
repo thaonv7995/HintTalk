@@ -16,6 +16,7 @@
 		665BF54CA0C28F3849953596 /* LiveVoiceSessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 682DFDE28BF7C8378A834D0D /* LiveVoiceSessionView.swift */; };
 		68CF965C82EB67315328EE95 /* AudioSessionCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2CF07D25C4E636DECAEF33B /* AudioSessionCoordinator.swift */; };
 		70C734B7126F19453DD90930 /* TopicPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 394B1D85AC1FC5908292149B /* TopicPickerView.swift */; };
+		79FDDB660DF784AA5C0B2564 /* SpeechTranscriber.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB24840EBF633214E42CD0A /* SpeechTranscriber.swift */; };
 		7A0FD40452E4F0C3E36E885E /* HintTalkApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B91908843905C306810A1535 /* HintTalkApp.swift */; };
 		7AA29B2337CF62B20BCBA137 /* HintAgent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A7B0F1518267F9F88A8270C /* HintAgent.swift */; };
 		7B387931C0667FBFFAFF432F /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D7337A6019435E8E2CAD4DB /* SettingsView.swift */; };
@@ -41,6 +42,7 @@
 
 /* Begin PBXFileReference section */
 		0BEFF2ACC40A507075F0B37D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		0CB24840EBF633214E42CD0A /* SpeechTranscriber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechTranscriber.swift; sourceTree = "<group>"; };
 		1A7B0F1518267F9F88A8270C /* HintAgent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HintAgent.swift; sourceTree = "<group>"; };
 		2D7337A6019435E8E2CAD4DB /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		2DDDA60535F2BFFC67091E9A /* ShadowingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShadowingView.swift; sourceTree = "<group>"; };
@@ -227,6 +229,7 @@
 			isa = PBXGroup;
 			children = (
 				E2CF07D25C4E636DECAEF33B /* AudioSessionCoordinator.swift */,
+				0CB24840EBF633214E42CD0A /* SpeechTranscriber.swift */,
 			);
 			path = Audio;
 			sourceTree = "<group>";
@@ -360,6 +363,7 @@
 				EE8347799B0899D1F01C0D01 /* ShadowingScorer.swift in Sources */,
 				00D44D2B45D1DE8BAE2861C1 /* ShadowingView.swift in Sources */,
 				12B384C8A91F0B6A17253908 /* ShadowingViewModel.swift in Sources */,
+				79FDDB660DF784AA5C0B2564 /* SpeechTranscriber.swift in Sources */,
 				EEDE8C08905A9A77D3203A6C /* Theme.swift in Sources */,
 				DA0D418F1F88EF88A31A8EA2 /* TopicCatalog.swift in Sources */,
 				70C734B7126F19453DD90930 /* TopicPickerView.swift in Sources */,

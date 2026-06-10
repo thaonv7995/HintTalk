@@ -82,7 +82,10 @@ struct SettingsView: View {
                             .font(.subheadline)
                         Slider(value: $settings.shadowingGapSeconds, in: 1 ... 8, step: 1)
                     }
-                    PasteField(placeholder: "Transcription model", text: $sttModel)
+                    Toggle("On-device transcription (free, offline)", isOn: $settings.useOnDeviceStt)
+                    if !settings.useOnDeviceStt {
+                        PasteField(placeholder: "Transcription model", text: $sttModel)
+                    }
                     Toggle("Use OpenAI TTS voice", isOn: $settings.useOpenAiTts)
                     if settings.useOpenAiTts {
                         PasteField(placeholder: "TTS model", text: $ttsModel)

@@ -68,13 +68,106 @@ enum ChatCompletionClient {
         }
     }
 
-    private static func send(settings: SettingsStore, body: [String: Any]) async throws -> String {
+    /// Streaming variant — `onDelta` receives the full accumulated text after each chunk,
+    /// so callers can progressively parse partial output (e.g. show hints early).
+    static func fetchStreaming(
+        settings: SettingsStore,
+        messages: [ChatMessage],
+        temperature: Double,
+        maxTokens: Int? = nil,
+        jsonMode: Bool = false,
+        onDelta: @escaping (String) -> Void
+    ) async throws -> String {
+        var body: [String: Any] = [
+            "model": settings.hintModel,
+            "messages": messages.map { ["role": $0.role, "content": $0.content] },
+            "temperature": temperature,
+            "stream": true,
+        ]
+        if let maxTokens { body["max_tokens"] = maxTokens }
+        if jsonMode { body["response_format"] = ["type": "json_object"] }
+
+        do {
+            return try await sendStream(settings: settings, body: body, onDelta: onDelta)
+        } catch let ChatClientError.http(400, errorBody) {
+            var retryBody = body
+            var shouldRetry = false
+            if errorBody.contains("max_tokens"), let maxTokens {
+                retryBody.removeValue(forKey: "max_tokens")
+                retryBody["max_completion_tokens"] = maxTokens
+                shouldRetry = true
+            }
+            if errorBody.contains("temperature") {
+                retryBody.removeValue(forKey: "temperature")
+                shouldRetry = true
+            }
+            guard shouldRetry else { throw ChatClientError.http(400, errorBody) }
+            return try await sendStream(settings: settings, body: retryBody, onDelta: onDelta)
+        }
+    }
+
+    private static func sendStream(
+        settings: SettingsStore,
+        body: [String: Any],
+        onDelta: @escaping (String) -> Void
+    ) async throws -> String {
+        let request = try makeRequest(settings: settings, body: body)
+        let (bytes, response) = try await URLSession.shared.bytes(for: request)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+
+        guard (200 ..< 300).contains(status) else {
+            var errorBody = ""
+            for try await line in bytes.lines where errorBody.count < 2000 {
+                errorBody += line
+            }
+            throw ChatClientError.http(status, errorBody)
+        }
+
+        var accumulated = ""
+        var rawFallback = ""
+        for try await line in bytes.lines {
+            try Task.checkCancellation()
+            let trimmedLine = line.trimmed
+            guard trimmedLine.hasPrefix("data: ") else {
+                // Provider may have ignored `stream: true` and sent a plain JSON body.
+                rawFallback += line + "\n"
+                continue
+            }
+            if trimmedLine == "data: [DONE]" { break }
+            let jsonStr = String(trimmedLine.dropFirst(6))
+            guard
+                let chunkData = jsonStr.data(using: .utf8),
+                let chunk = (try? JSONSerialization.jsonObject(with: chunkData)) as? [String: Any],
+                let choices = chunk["choices"] as? [[String: Any]],
+                let delta = choices.first?["delta"] as? [String: Any],
+                let piece = delta["content"] as? String,
+                !piece.isEmpty
+            else { continue }
+            accumulated += piece
+            onDelta(accumulated)
+        }
+
+        let text = accumulated.trimmed
+        if !text.isEmpty { return text }
+
+        // Non-streaming fallback body (provider ignored the stream flag).
+        if let data = rawFallback.data(using: .utf8),
+           let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+           let choices = json["choices"] as? [[String: Any]],
+           let message = choices.first?["message"] as? [String: Any],
+           let content = (message["content"] as? String)?.trimmed,
+           !content.isEmpty {
+            return content
+        }
+        throw ChatClientError.emptyContent(finishReason: "stream")
+    }
+
+    private static func makeRequest(settings: SettingsStore, body: [String: Any]) throws -> URLRequest {
         let base = settings.hintBaseUrl.trimmed
             .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         guard let url = URL(string: "\(base)/chat/completions") else {
             throw ChatClientError.badURL
         }
-
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.timeoutInterval = 45
@@ -84,7 +177,11 @@ enum ChatCompletionClient {
             request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         }
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        return request
+    }
 
+    private static func send(settings: SettingsStore, body: [String: Any]) async throws -> String {
+        let request = try makeRequest(settings: settings, body: body)
         let (data, response) = try await URLSession.shared.data(for: request)
         let http = response as? HTTPURLResponse
         let status = http?.statusCode ?? 0

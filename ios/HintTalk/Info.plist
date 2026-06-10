@@ -24,6 +24,8 @@
 	<false/>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>HintTalk uses the microphone for live English role-play conversations and shadowing practice.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>HintTalk transcribes your shadowing recordings on-device to score pronunciation accuracy without sending audio anywhere.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>
