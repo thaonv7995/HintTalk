@@ -1,0 +1,959 @@
+{
+  "version": 1,
+  "categories": [
+    {
+      "id": "general",
+      "title": "General",
+      "description": "Open-ended warmup — learner and AI co-create the storyline together.",
+      "registerDefault": "free",
+      "learnerGuide": [
+        "Co-create specifics (place, stakes, timeframe) verbally once the session begins.",
+        "Signal what you’re practising (“I’d like polite complaints today”).",
+        "Recycle useful phrases aloud if something didn’t sound natural."
+      ],
+      "aiGuide": [
+        "Mirror the learner’s chosen topic; suggest gentle forks if imagination stalls.",
+        "Keep scaffolding questions short so the learner does most of the speaking.",
+        "Stay flexible if they veto an idea."
+      ],
+      "topics": [
+        {
+          "id": "open",
+          "label": "Any topic — decide together",
+          "subtitle": "Negotiate scenario + roles verbally after pressing Start.",
+          "situation": "",
+          "defaultUserRole": "Learner",
+          "defaultAiRole": "Conversation partner",
+          "register": "free",
+          "learnerExtras": [
+            "Propose concrete places or goals if silence drags (“How about practising a hotel check-in?”)."
+          ],
+          "aiExtras": [
+            "Warmly invite the learner to choose; affirm ideas and scaffold missing details collaboratively."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "food_hospitality",
+      "title": "Food & hospitality",
+      "description": "Ordering, tweaks, tipping culture, polite complaints.",
+      "registerDefault": "neutral",
+      "learnerGuide": [
+        "State orders clearly then confirm details aloud (modifiers, allergens, takeaway).",
+        "Use polite escalation when something is wrong: facts → impact → acceptable fix.",
+        "Practice natural small talk queues (weather, specials) without dominating."
+      ],
+      "aiGuide": [
+        "Maintain venue-appropriate hustle; confirm orders back to reduce errors.",
+        "Offer one unobtrusive upsell when it fits (“Today’s pastries are…” ).",
+        "Apologise concretely and propose options during service recovery."
+      ],
+      "topics": [
+        {
+          "id": "cafe",
+          "label": "Café — order & customize",
+          "subtitle": "",
+          "situation": "Busy neighbourhood café: you queue politely, order a drink (hot/iced, size, milk type, sugar level), maybe a pastry. Ask what’s popular or seasonal, clarify price if needed, say dine-in or takeaway, and exchange small talk about the weather or how busy it is. Stay natural — corrections (“actually decaf please”) are welcome.",
+          "defaultUserRole": "Customer",
+          "defaultAiRole": "Barista",
+          "register": "",
+          "learnerExtras": [],
+          "aiExtras": []
+        },
+        {
+          "id": "restaurant",
+          "label": "Restaurant — full service",
+          "subtitle": "",
+          "situation": "Sit-down restaurant at dinner: greet the host, sit, study the menu, ask how spicy or large portions are, mention allergies or vegetarian needs, order courses, ask for the bill and splitting/tipping customs for this city. React if something is wrong (cold food, wrong dish) politely but clearly.",
+          "defaultUserRole": "Diner",
+          "defaultAiRole": "Server",
+          "register": "",
+          "learnerExtras": [],
+          "aiExtras": []
+        },
+        {
+          "id": "complaint_restaurant",
+          "label": "Restaurant — polite complaint",
+          "subtitle": "",
+          "situation": "You finished most of the meal but something went wrong (long wait, wrong dish, billing error). Stay calm, explain facts, ask for a fair fix (redo dish, remove charge). The staff should apologize and offer options; you negotiate briefly without shouting.",
+          "defaultUserRole": "Diner",
+          "defaultAiRole": "Manager",
+          "register": "",
+          "learnerExtras": [],
+          "aiExtras": []
+        },
+        {
+          "id": "delivery_food",
+          "label": "Delivery — wrong or late order",
+          "subtitle": "",
+          "situation": "Food delivery app: order arrived late, wrong items, or spilled. You message/call support tone: describe order ID, what’s missing, what you want (refund partial redelivery). Stay firm but polite.",
+          "defaultUserRole": "Customer",
+          "defaultAiRole": "Delivery support",
+          "register": "",
+          "learnerExtras": [],
+          "aiExtras": []
+        },
+        {
+          "id": "coffee_drive_thru",
+          "label": "Drive-thru lane",
+          "subtitle": "Order through the speaker, confirm total, fix mistakes at the window.",
+          "situation": "Busy drive-through: noisy intercom, staff read back drink modifiers; learner handles mishears; pickup window handles payment and hand-off politely.",
+          "defaultUserRole": "Driver",
+          "defaultAiRole": "Crew member",
+          "register": "casual",
+          "learnerExtras": [
+            "Pause after each modifier so read-back is easy.",
+            "Echo the total and ask before paying if something sounds off."
+          ],
+          "aiExtras": [
+            "Read the order back once clearly; keep lines short over the speaker."
+          ]
+        },
+        {
+          "id": "bakery_counter",
+          "label": "Bakery — bread & pastries",
+          "subtitle": "Freshness, allergens, slicing, preorder pickup.",
+          "situation": "Artisan bakery queue: ask what is freshest, nut-free options, preorder name, half-loaf and slice thickness, bag preference, peak-hour politeness.",
+          "defaultUserRole": "Customer",
+          "defaultAiRole": "Baker / counter",
+          "register": "",
+          "learnerExtras": [
+            "Name allergens calmly; correct mistakes without sounding rude.",
+            "Confirm price when something is weighed."
+          ],
+          "aiExtras": [
+            "Offer one soft upsell with a short tasting note."
+          ]
+        },
+        {
+          "id": "farmers_market_stall",
+          "label": "Farmers’ market stall",
+          "subtitle": "Samples policy, weighing, small talk with vendors.",
+          "situation": "Outdoor market: tastings policy, weighed pricing, carrying multiple small buys, short friendly chat about what is in season.",
+          "defaultUserRole": "Shopper",
+          "defaultAiRole": "Vendor",
+          "register": "casual",
+          "learnerExtras": [
+            "Ask “Could you add one more small bunch after you weigh this?”.",
+            "Switch between price questions and light small talk."
+          ],
+          "aiExtras": [
+            "Sound like a real stallholder; give plausible harvest detail."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "travel_transport",
+      "title": "Travel & transport",
+      "description": "Airlines, lodging, rails, taxis, rentals — itineraries under stress.",
+      "registerDefault": "neutral",
+      "learnerGuide": [
+        "Provide reservation numbers, itineraries, baggage facts before asking for fixes.",
+        "Ask about fees, timelines, and written/email confirmation when stakes are high.",
+        "Practice calm tone even when annoyed — firm but factual."
+      ],
+      "aiGuide": [
+        "Enforce plausible policies yet stay helpful (rebooking, vouchers, disclaimers).",
+        "Volunteer realistic next-step suggestions (gates, ETA, vouchers).",
+        "Acknowledge stress empathetically while staying concise."
+      ],
+      "topics": [
+        {
+          "id": "airport",
+          "label": "Airport — check-in & gate",
+          "subtitle": "",
+          "situation": "International airport: check-in kiosk issues, baggage allowance overweight fees, security-friendly questions, lounge access, boarding gate changes, asking staff where to find ATM or pharmacy airside. One traveller is slightly stressed — keep dialogue realistic.",
+          "defaultUserRole": "Traveler",
+          "defaultAiRole": "Airline staff",
+          "register": "",
+          "learnerExtras": [],
+          "aiExtras": []
+        },
+        {
+          "id": "flight_delay",
+          "label": "Airport — delay & rebooking",
+          "subtitle": "",
+          "situation": "Flight cancelled or heavily delayed: speak at airline desk for rebooking, hotel voucher, meal voucher, next connection concern. Ask about luggage rerouting and ETA; push politely if answers are vague.",
+          "defaultUserRole": "Passenger",
+          "defaultAiRole": "Airline agent",
+          "register": "",
+          "learnerExtras": [],
+          "aiExtras": []
+        },
+        {
+          "id": "hotel",
+          "label": "Hotel — front desk",
+          "subtitle": "",
+          "situation": "Hotel arrival or mid-stay: check-in ID/credit card hold, room type vs booking, floor preference, Wi‑Fi password, breakfast hours, gym/pool, nearby safe walks. Later: noisy neighbours AC broken late checkout — realistic problem-solving tone.",
+          "defaultUserRole": "Guest",
+          "defaultAiRole": "Front desk clerk",
+          "register": "",
+          "learnerExtras": [],
+          "aiExtras": []
+        },
+        {
+          "id": "hotel_complaint",
+          "label": "Hotel — room issue escalation",
+          "subtitle": "",
+          "situation": "Night noise construction smell dirty bathroom AC broken safe won’t open. Call front desk or speak downstairs ask compensation room move engineer timeframe stay polite factual.",
+          "defaultUserRole": "Guest",
+          "defaultAiRole": "Duty manager",
+          "register": "",
+          "learnerExtras": [],
+          "aiExtras": []
+        },
+        {
+          "id": "train_station",
+          "label": "Train — tickets & platform",
+          "subtitle": "",
+          "situation": "Busy station: ticket machine won’t read card ask staffed counter routes transfers seat reservation bicycle carriage rush hour platform change announcements unclear.",
+          "defaultUserRole": "Traveler",
+          "defaultAiRole": "Station staff",
+          "register": "",
+          "learnerExtras": [],
+          "aiExtras": []
+        },
+        {
+          "id": "taxi_rideshare",
+          "label": "Taxi / ride-hail",
+          "subtitle": "",
+          "situation": "Catch ride airport hotel confirm destination route toll preference luggage trunk chat lightly about traffic weather tip culture drop-off exact entrance.",
+          "defaultUserRole": "Rider",
+          "defaultAiRole": "Driver",
+          "register": "",
+          "learnerExtras": [],
+          "aiExtras": []
+        },
+        {
+          "id": "car_rental",
+          "label": "Car rental counter",
+          "subtitle": "",
+          "situation": "Pickup rental: insurance damage waiver fuel policy mileage deposit young-driver fee GPS child seat upgrade dispute scratch on sheet extend rental drop-off different city.",
+          "defaultUserRole": "Customer",
+          "defaultAiRole": "Rental agent",
+          "register": "",
+          "learnerExtras": [],
+          "aiExtras": []
+        },
+        {
+          "id": "hostel_checkin_budget",
+          "label": "Hostel check-in",
+          "subtitle": "Bunks, lockers, quiet hours, kitchen etiquette.",
+          "situation": "Budget hostel: bunk assignment, locker deposit, house rules, chore sheet, shared kitchen etiquette, respect for quiet hours.",
+          "defaultUserRole": "Backpacker",
+          "defaultAiRole": "Hostel reception",
+          "register": "",
+          "learnerExtras": [
+            "Ask check-out time, adaptor sales, and luggage storage in order.",
+            "React positively when many rules are listed at once."
+          ],
+          "aiExtras": [
+            "Be welcoming but brief; warn about late-night noise windows."
+          ]
+        },
+        {
+          "id": "hotel_concierge",
+          "label": "Hotel concierge",
+          "subtitle": "Restaurants, routes, taxis, family-friendly tips.",
+          "situation": "Hotel lobby concierge: dinner suggestions with constraints, stroller-friendly routes, rainy-day options, realistic expectations on tables and tips.",
+          "defaultUserRole": "Guest",
+          "defaultAiRole": "Concierge",
+          "register": "formal",
+          "learnerExtras": [
+            "State budget and dietary needs up front.",
+            "Ask for two options and a backup if the first is full."
+          ],
+          "aiExtras": [
+            "Offer tiered suggestions; avoid impossible promises."
+          ]
+        },
+        {
+          "id": "rental_car_return_airport",
+          "label": "Rental car — airport return",
+          "subtitle": "Quick inspection, damage notes, shuttle to terminal.",
+          "situation": "Airport-area return under time pressure: fuel receipt, small scratch dispute, need for shuttle to terminal; stay factual and calm.",
+          "defaultUserRole": "Renter",
+          "defaultAiRole": "Return clerk",
+          "register": "",
+          "learnerExtras": [
+            "Refer to photos or pick-up sheet if a scratch is disputed.",
+            "Ask for a supervisor calmly if the clock is tight."
+          ],
+          "aiExtras": [
+            "Follow plausible company policy; offer a clear escalation path."
+          ]
+        },
+        {
+          "id": "border_declaration_desk",
+          "label": "Arrival — customs declaration",
+          "subtitle": "Truthful lists, simple answers, calm cooperation.",
+          "situation": "Airport customs lane: declare souvenirs and small cash gifts truthfully; answer short questions; officer is firm and procedural, not personal.",
+          "defaultUserRole": "Traveller",
+          "defaultAiRole": "Border officer",
+          "register": "formal",
+          "learnerExtras": [
+            "Answer in short clear sentences; do not ramble when nervous.",
+            "If unsure, say you are unsure rather than guessing."
+          ],
+          "aiExtras": [
+            "Stay professional; do not invent laws; keep tone neutral."
+          ]
+        },
+        {
+          "id": "roadside_dispatch_call",
+          "label": "Roadside assistance call",
+          "subtitle": "Location, tyre, ETA, membership details.",
+          "situation": "Stranded driver on phone: dispatch checks cover, verifies exact location and tyre situation, gives ETA updates, stays calm.",
+          "defaultUserRole": "Driver",
+          "defaultAiRole": "Dispatch agent",
+          "register": "",
+          "learnerExtras": [
+            "Give direction and landmark clues clearly.",
+            "Repeat confirmations back."
+          ],
+          "aiExtras": [
+            "Stay procedural and reassuring; escalate tow timing once."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "errands_services",
+      "title": "Errands & services",
+      "description": "Retail counters, civic desks, parcels, everyday civic English.",
+      "registerDefault": "neutral",
+      "learnerGuide": [
+        "State your goal plainly and bring needed nouns (“tracking number”, account type).",
+        "Ask jargon to be rephrased; repeat tricky spellings aloud.",
+        "Practice asking for clarification on forms, timelines, penalties."
+      ],
+      "aiGuide": [
+        "Reference realistic procedures without inventing unlawful shortcuts.",
+        "Offer step-by-step guidance when bureaucracy is confusing.",
+        "Keep jargon minimal unless the learner probes deeper."
+      ],
+      "topics": [
+        {
+          "id": "shopping",
+          "label": "Retail — browse & buy",
+          "subtitle": "",
+          "situation": "Clothing or electronics store: size colour stock compare models warranty return window gift receipt student discount try fitting room ask recommendation upsell politely decline.",
+          "defaultUserRole": "Shopper",
+          "defaultAiRole": "Sales associate",
+          "register": "",
+          "learnerExtras": [],
+          "aiExtras": []
+        },
+        {
+          "id": "directions",
+          "label": "Street — directions",
+          "subtitle": "",
+          "situation": "Lost visitor asks local walking subway landmarks ETA pronunciation repeat slower thank you offer alternate route if first unclear.",
+          "defaultUserRole": "Visitor",
+          "defaultAiRole": "Local person",
+          "register": "",
+          "learnerExtras": [],
+          "aiExtras": []
+        },
+        {
+          "id": "bank",
+          "label": "Bank branch visit",
+          "subtitle": "",
+          "situation": "Counter appointment wire transfer fee misunderstanding debit card block appointment mortgage teaser question safe deposit hours English forms clarify jargon patiently.",
+          "defaultUserRole": "Customer",
+          "defaultAiRole": "Bank teller",
+          "register": "",
+          "learnerExtras": [],
+          "aiExtras": []
+        },
+        {
+          "id": "post_office",
+          "label": "Post / parcel desk",
+          "subtitle": "",
+          "situation": "Send international package customs form insurance tracking lost parcel claim pick-up slip queue forms weigh stamps restricted items.",
+          "defaultUserRole": "Customer",
+          "defaultAiRole": "Postal clerk",
+          "register": "",
+          "learnerExtras": [],
+          "aiExtras": []
+        },
+        {
+          "id": "library",
+          "label": "Library — membership & study",
+          "subtitle": "",
+          "situation": "Sign-up card borrowing limits printer quiet zone group study room reservation overdue fines digital resources thesis chapter small talk librarian.",
+          "defaultUserRole": "Patron",
+          "defaultAiRole": "Librarian",
+          "register": "",
+          "learnerExtras": [],
+          "aiExtras": []
+        },
+        {
+          "id": "optician_glasses_shop",
+          "label": "Optician — lenses & frames",
+          "subtitle": "Prescription checks, coatings, lead time.",
+          "situation": "Optical shop: lens index, coatings, anti-glare trade-offs, PD measure, realistic order lead time, polite pushback on upsell.",
+          "defaultUserRole": "Customer",
+          "defaultAiRole": "Optician / sales",
+          "register": "",
+          "learnerExtras": [
+            "Ask for jargon in plain English.",
+            "State a budget early to guide options."
+          ],
+          "aiExtras": [
+            "Explain trade-offs with simple analogies; give honest timelines."
+          ]
+        },
+        {
+          "id": "tailor_alterations_quick",
+          "label": "Tailor — quick alterations",
+          "subtitle": "Hems, taper, turnaround, express fee.",
+          "situation": "Small tailor shop: fitting on a box, hem and taper discussion, wedding deadline, possible express surcharge, pin etiquette.",
+          "defaultUserRole": "Client",
+          "defaultAiRole": "Tailor",
+          "register": "",
+          "learnerExtras": [
+            "Confirm pickup date and written quote.",
+            "Give measurements in both metric/imperial if asked."
+          ],
+          "aiExtras": [
+            "Set fair limits on rush jobs; stay kind about body-shape anxiety."
+          ]
+        },
+        {
+          "id": "city_lost_property",
+          "label": "City lost & found",
+          "subtitle": "Reference numbers, vague descriptions, next steps.",
+          "situation": "Transit or municipal lost-property desk: describe an item clearly, fill a form with help, learn wait time or reference number politely.",
+          "defaultUserRole": "Visitor",
+          "defaultAiRole": "Desk attendant",
+          "register": "",
+          "learnerExtras": [
+            "Give one distinctive detail (sticker colour, notch) without contradicting yourself.",
+            "Ask for a reference number before leaving."
+          ],
+          "aiExtras": [
+            "Follow privacy rules; set realistic expectations on wait time."
+          ]
+        },
+        {
+          "id": "small_move_quote",
+          "label": "Small move — van quote",
+          "subtitle": "Stairs, parking, blankets, surcharges.",
+          "situation": "Calling for a small move: list bulky items, stairs vs lift, parking permit who pays, time window, congestion or toll surcharges.",
+          "defaultUserRole": "Renter",
+          "defaultAiRole": "Mover / dispatch",
+          "register": "",
+          "learnerExtras": [
+            "Summarise the inventory succinctly.",
+            "Ask what is included in the quote."
+          ],
+          "aiExtras": [
+            "Give a plausible price band and buffer for traffic."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "health",
+      "title": "Health & wellbeing",
+      "description": "Patients, pharmacies, vets — factual and empathetic English.",
+      "registerDefault": "clinical",
+      "learnerGuide": [
+        "Describe timelines, triggers, meds, allergies with chronological clarity.",
+        "Ask predictable next steps (labs, dosing, precautions) politely.",
+        "Avoid demanding definitive diagnoses beyond what the clinician can say."
+      ],
+      "aiGuide": [
+        "Use plain-language reassurance and focused follow-up questions.",
+        "Defer to escalation (“see your GP”) when outside scope.",
+        "Never invent prescriptions; cite typical options generically."
+      ],
+      "topics": [
+        {
+          "id": "clinic",
+          "label": "Clinic — describe symptoms",
+          "subtitle": "",
+          "situation": "Primary care: explain onset duration pain scale allergies meds pregnancy relevant briefly answer clarifying questions agree plan referral labs follow-up empathetic professional tone.",
+          "defaultUserRole": "Patient",
+          "defaultAiRole": "Clinician",
+          "register": "",
+          "learnerExtras": [],
+          "aiExtras": []
+        },
+        {
+          "id": "pharmacy",
+          "label": "Pharmacy — OTC & pickup",
+          "subtitle": "",
+          "situation": "Drugstore: ask pharmacist cough allergy mild pain children dosing interactions generic vs brand prescription pickup insurance copay pronunciation spelling.",
+          "defaultUserRole": "Customer",
+          "defaultAiRole": "Pharmacist",
+          "register": "",
+          "learnerExtras": [],
+          "aiExtras": []
+        },
+        {
+          "id": "dentist",
+          "label": "Dental — check-up chair-side",
+          "subtitle": "",
+          "situation": "Routine cleaning anxiety mild floss lecture consent X-ray schedule next appointment billing insurance estimate sensitivity.",
+          "defaultUserRole": "Patient",
+          "defaultAiRole": "Dentist",
+          "register": "",
+          "learnerExtras": [],
+          "aiExtras": []
+        },
+        {
+          "id": "vet",
+          "label": "Vet — pet visit",
+          "subtitle": "",
+          "situation": "Dog/cat symptoms eating vomiting vaccines travel certificate groom referral cost estimate emotional owner realistic.",
+          "defaultUserRole": "Pet owner",
+          "defaultAiRole": "Veterinarian",
+          "register": "",
+          "learnerExtras": [],
+          "aiExtras": []
+        }
+      ]
+    },
+    {
+      "id": "home_neighbours",
+      "title": "Home & neighbours",
+      "description": "Housing hunts, roommate life, courteous neighbour diplomacy.",
+      "registerDefault": "neutral",
+      "learnerGuide": [
+        "Frame requests with shared goals (“quiet hours”) and concrete suggestions.",
+        "Negotiate politely: listen, repeat back their stance, propose compromise.",
+        "Capture deal points aloud (deposit, chores, timelines)."
+      ],
+      "aiGuide": [
+        "Show realistic tenancy constraints plus willingness to troubleshoot.",
+        "Mirror balanced empathy for shared-flat friction.",
+        "Offer concrete compromises before shutting ideas down."
+      ],
+      "topics": [
+        {
+          "id": "landlord_viewing",
+          "label": "Flat viewing — landlord/agent",
+          "subtitle": "",
+          "situation": "Rent studio two-bed bills deposit contract length pets smoking repairs timeline neighbourhood noise commute paperwork viewing second thoughts polite negotiation.",
+          "defaultUserRole": "Prospective tenant",
+          "defaultAiRole": "Landlord / agent",
+          "register": "",
+          "learnerExtras": [],
+          "aiExtras": []
+        },
+        {
+          "id": "roommate",
+          "label": "Roommate — house chat",
+          "subtitle": "",
+          "situation": "Shared flat dishes noise guests bills chore chart thermostat groceries respectful boundaries humour awkward moments.",
+          "defaultUserRole": "Roommate",
+          "defaultAiRole": "Roommate",
+          "register": "",
+          "learnerExtras": [],
+          "aiExtras": []
+        },
+        {
+          "id": "neighbor",
+          "label": "Neighbour — polite request",
+          "subtitle": "",
+          "situation": "Parking noise party plant watering package polite boundary apology compromise weekend quiet hours.",
+          "defaultUserRole": "Neighbour",
+          "defaultAiRole": "Neighbour",
+          "register": "",
+          "learnerExtras": [],
+          "aiExtras": []
+        }
+      ]
+    },
+    {
+      "id": "work_study",
+      "title": "Work & study",
+      "description": "Interviews, meetings, academia — professional pacing.",
+      "registerDefault": "formal",
+      "learnerGuide": [
+        "Practice STAR-ish answers succinctly yet with memorable detail.",
+        "Ask purposeful follow-ups (scope, KPIs, next steps).",
+        "Demonstrate diplomacy when pushing back upward."
+      ],
+      "aiGuide": [
+        "Play believable interviewer/manager timelines and constraints.",
+        "Ask focused behavioural prompts; avoid courtroom cross-examination.",
+        "Celebrate wins while probing growth areas politely."
+      ],
+      "topics": [
+        {
+          "id": "interview",
+          "label": "Job interview",
+          "subtitle": "",
+          "situation": "Structured hiring conversation walk through CV gaps behavioural STAR salary expectation remote hybrid notice period questions for them closing handshake tone.",
+          "defaultUserRole": "Candidate",
+          "defaultAiRole": "Interviewer",
+          "register": "",
+          "learnerExtras": [],
+          "aiExtras": []
+        },
+        {
+          "id": "meeting",
+          "label": "Work — stand-up & blocker",
+          "subtitle": "",
+          "situation": "Daily sync slipped timeline dependency escalate stakeholder polite push alternatives recap action items realistic jargon moderate pace.",
+          "defaultUserRole": "Team member",
+          "defaultAiRole": "Team lead",
+          "register": "",
+          "learnerExtras": [],
+          "aiExtras": []
+        },
+        {
+          "id": "performance_chat",
+          "label": "Work — review / feedback",
+          "subtitle": "",
+          "situation": "Mid-year chat strengths growth areas metrics promotion timeline training request emotional intelligence manager listens employee pushes back lightly agrees SMART goals.",
+          "defaultUserRole": "Employee",
+          "defaultAiRole": "Manager",
+          "register": "",
+          "learnerExtras": [],
+          "aiExtras": []
+        },
+        {
+          "id": "networking",
+          "label": "Networking event mingle",
+          "subtitle": "",
+          "situation": "Conference mixer elevator pitch swap LinkedIns industry trend ask thoughtful question exit conversation gracefully follow-up coffee vague job hunt subtle.",
+          "defaultUserRole": "Attendee",
+          "defaultAiRole": "Other attendee",
+          "register": "",
+          "learnerExtras": [],
+          "aiExtras": []
+        },
+        {
+          "id": "office_hours",
+          "label": "Uni — professor office hours",
+          "subtitle": "",
+          "situation": "Essay thesis extension grading rubric clarification citation confusion respectful persuasive realistic academic boundaries.",
+          "defaultUserRole": "Student",
+          "defaultAiRole": "Professor",
+          "register": "",
+          "learnerExtras": [],
+          "aiExtras": []
+        },
+        {
+          "id": "parent_teacher_lite",
+          "label": "Parent–teacher chat",
+          "subtitle": "Progress, worries, respectful time box.",
+          "situation": "Short teacher meeting: child's progress dips, multilingual home context, maths confidence, extracurricular overload; respectful of the teacher's time.",
+          "defaultUserRole": "Parent / guardian",
+          "defaultAiRole": "Teacher",
+          "register": "neutral",
+          "learnerExtras": [
+            "Ask one focused follow-up at a time.",
+            "Acknowledge home constraints calmly."
+          ],
+          "aiExtras": [
+            "Answer with brief evidence-based suggestions."
+          ]
+        },
+        {
+          "id": "esl_tutor_session",
+          "label": "1:1 ESL tutoring",
+          "subtitle": "Pronunciation, chunks, corrective feedback loops.",
+          "situation": "Private ESL session: minimal pairs, chunked correction, repetition, gentle motivation; learner drives some of the drill choice.",
+          "defaultUserRole": "Learner student",
+          "defaultAiRole": "Tutor",
+          "register": "",
+          "learnerExtras": [
+            "Request a targeted sound or grammar point.",
+            "Paraphrase the tutor's correction to show you heard it."
+          ],
+          "aiExtras": [
+            "Model then invite imitation; avoid long grammar lectures."
+          ]
+        },
+        {
+          "id": "remote_sales_demo",
+          "label": "Client discovery call",
+          "subtitle": "Needs, objections, next steps aloud.",
+          "situation": "Short B2B-style discovery plus mini-demo: clarify customer needs, handle a compliance objection, summarise next steps in one verbal recap.",
+          "defaultUserRole": "Account executive",
+          "defaultAiRole": "Prospective client",
+          "register": "formal",
+          "learnerExtras": [
+            "Label assumptions explicitly before pitching.",
+            "Close with three bullet recap aloud."
+          ],
+          "aiExtras": [
+            "Be skeptical but fair; cite realistic procurement friction."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "support_retail",
+      "title": "Support & tech retail",
+      "description": "Call-centre diplomacy, escalation scripts, handset counters.",
+      "registerDefault": "neutral",
+      "learnerGuide": [
+        "Summarize the issue succinctly plus evidence (dates, screenshots described).",
+        "State acceptable outcomes (refund, replacement, SLA).",
+        "Stay patient with verification scripts while protecting privacy."
+      ],
+      "aiGuide": [
+        "Follow realistic workflow (verify ticket, place on hold politely).",
+        "Offer scripted empathy plus escalation paths.",
+        "Keep hardware retail facts plausible for mid-market brands."
+      ],
+      "topics": [
+        {
+          "id": "support_call",
+          "label": "Support hotline",
+          "subtitle": "",
+          "situation": "Billing dispute outage refund loyalty retention scripted empathy escalation ticket number patience spelling email recap threaten cancel politely.",
+          "defaultUserRole": "Customer",
+          "defaultAiRole": "Support agent",
+          "register": "",
+          "learnerExtras": [],
+          "aiExtras": []
+        },
+        {
+          "id": "telco_store",
+          "label": "Phone shop — plan & handset",
+          "subtitle": "",
+          "situation": "Upgrade contract roaming family plan trade-in cracked screen insurance installment compare cameras realistic upsell resist politely.",
+          "defaultUserRole": "Customer",
+          "defaultAiRole": "Retail associate",
+          "register": "",
+          "learnerExtras": [],
+          "aiExtras": []
+        },
+        {
+          "id": "phone_repair_counter",
+          "label": "Phone repair counter",
+          "subtitle": "Data risk, parts, warranty, turnaround.",
+          "situation": "Repair counter: data backup warning, screen quality options, realistic repair time, loaner or trade-in mention, patience with queue.",
+          "defaultUserRole": "Customer",
+          "defaultAiRole": "Tech lead",
+          "register": "",
+          "learnerExtras": [
+            "Ask what voids warranty before agreeing.",
+            "Repeat the SLA date aloud to confirm."
+          ],
+          "aiExtras": [
+            "No magic fixes; explain delays honestly."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "leisure",
+      "title": "Leisure & culture",
+      "description": "Museums, cinema, salons, gyms, cowork hubs.",
+      "registerDefault": "casual",
+      "learnerGuide": [
+        "Ask logistical questions aloud (pricing, combos, blackout rules).",
+        "Give gentle feedback loops (“mirror please”, haircut tweaks).",
+        "Handle upsell courteously (“Not today thanks”)."
+      ],
+      "aiGuide": [
+        "Maintain venue cheer without pressure-cooking the learner.",
+        "Explain jargon (membership tiers, blackout windows) succinctly.",
+        "Offer plausible alternatives based on learner constraints."
+      ],
+      "topics": [
+        {
+          "id": "museum",
+          "label": "Museum / gallery desk",
+          "subtitle": "",
+          "situation": "Tickets student discount audio guide map cloakroom photography rules temporary exhibit directions café wheelchair route.",
+          "defaultUserRole": "Visitor",
+          "defaultAiRole": "Staff",
+          "register": "",
+          "learnerExtras": [],
+          "aiExtras": []
+        },
+        {
+          "id": "cinema",
+          "label": "Cinema box office",
+          "subtitle": "",
+          "situation": "Seat selection refunds subtitles IMAX vs standard snacks combo membership peak pricing.",
+          "defaultUserRole": "Moviegoer",
+          "defaultAiRole": "Box office staff",
+          "register": "",
+          "learnerExtras": [],
+          "aiExtras": []
+        },
+        {
+          "id": "gym",
+          "label": "Gym — membership desk",
+          "subtitle": "",
+          "situation": "Trial class personal trainer contract freeze fee cancellation guest pass locker etiquette peak hours.",
+          "defaultUserRole": "New member",
+          "defaultAiRole": "Front desk",
+          "register": "",
+          "learnerExtras": [],
+          "aiExtras": []
+        },
+        {
+          "id": "hair_salon",
+          "label": "Hair / barber appointment",
+          "subtitle": "",
+          "situation": "Describe cut colour reference photo maintenance schedule price patch test small talk mirror feedback tip.",
+          "defaultUserRole": "Client",
+          "defaultAiRole": "Stylist",
+          "register": "",
+          "learnerExtras": [],
+          "aiExtras": []
+        },
+        {
+          "id": "coworking",
+          "label": "Coworking — day pass",
+          "subtitle": "",
+          "situation": "Tour pricing quiet booth phone booth printer guest wifi meeting room booking coffee etiquette network event poster.",
+          "defaultUserRole": "Visitor",
+          "defaultAiRole": "Community manager",
+          "register": "",
+          "learnerExtras": [],
+          "aiExtras": []
+        },
+        {
+          "id": "climbing_gym_intro",
+          "label": "Climbing gym — first visit",
+          "subtitle": "Waiver, shoes, belay rules, autobelay.",
+          "situation": "First indoor climbing visit: waiver, shoe rental snugness humour, belay test policy honest if not certified, autobelay safety orientation.",
+          "defaultUserRole": "New climber",
+          "defaultAiRole": "Desk / setter",
+          "register": "casual",
+          "learnerExtras": [
+            "Admit honestly if you cannot belay.",
+            "Ask where beginner routes start."
+          ],
+          "aiExtras": [
+            "Be friendly but strict on safety non-negotiables."
+          ]
+        },
+        {
+          "id": "cooking_workshop_station",
+          "label": "Cooking class — bench talk",
+          "subtitle": "Subs for allergies, knife safety, plating feedback.",
+          "situation": "Hands-on class: substitutions for allergens, chef demos knife grip briefly, plating feedback with humour, respect hierarchy in the kitchen.",
+          "defaultUserRole": "Participant",
+          "defaultAiRole": "Chef instructor",
+          "register": "",
+          "learnerExtras": [
+            "Ask for a slower demo politely.",
+            "Clarify cross-contamination aloud."
+          ],
+          "aiExtras": [
+            "Praise specifics; correct unsafe moves firmly once."
+          ]
+        },
+        {
+          "id": "karaoke_room_booking",
+          "label": "Karaoke booth booking",
+          "subtitle": "Room tier, corkage, time extensions.",
+          "situation": "Karaoke venue: booth size tiers, corkage fees, blackout happy-hour rules, extend time politely, neighbour noise etiquette.",
+          "defaultUserRole": "Organiser",
+          "defaultAiRole": "Front attendant",
+          "register": "",
+          "learnerExtras": [
+            "Confirm tax-included price before deposit.",
+            "Negotiate extension without arguing."
+          ],
+          "aiExtras": [
+            "Explain house rules calmly when discounts fail."
+          ]
+        },
+        {
+          "id": "pet_groom_salon",
+          "label": "Pet grooming drop-off",
+          "subtitle": "Matting, behaviour, sedation policy, pickup.",
+          "situation": "Grooming salon: anxious owner describes coat matting and behaviour quirks; sedation policy; realistic timeframe and price.",
+          "defaultUserRole": "Pet owner",
+          "defaultAiRole": "Groomer",
+          "register": "empathetic",
+          "learnerExtras": [
+            "List triggers briefly (dryers, scissors near paws).",
+            "Confirm pickup window and estimate."
+          ],
+          "aiExtras": [
+            "Soothe calmly; defer to vet if skin issue spotted."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "social",
+      "title": "Social English",
+      "description": "Light rapport, recovery from awkward gaps, interpersonal boundaries.",
+      "registerDefault": "casual",
+      "learnerGuide": [
+        "Recycle open-ended questions (“How was your commute?” ).",
+        "Recover awkward pauses gracefully; respect boundaries aloud.",
+        "Practice polite disagreement without shutting down rapport."
+      ],
+      "aiGuide": [
+        "Model warm reciprocity plus micro follow-ups referencing their replies.",
+        "Keep tone friendly, not scripted stand-up comedy.",
+        "Flag gently if humour might land wrongly."
+      ],
+      "topics": [
+        {
+          "id": "small_talk",
+          "label": "Small talk — mix",
+          "subtitle": "",
+          "situation": "Light chat after class commute coffee kitchen weather weekend plans hobby Netflix polite disagree humour boundaries.",
+          "defaultUserRole": "Friend",
+          "defaultAiRole": "Friend (other)",
+          "register": "",
+          "learnerExtras": [],
+          "aiExtras": []
+        },
+        {
+          "id": "first_date_cafe",
+          "label": "Casual first meet-up",
+          "subtitle": "",
+          "situation": "Low-pressure café meet stories travel books music awkward silence recovery polite boundaries bill split humour realistic modern tone.",
+          "defaultUserRole": "Dater",
+          "defaultAiRole": "Date",
+          "register": "",
+          "learnerExtras": [],
+          "aiExtras": []
+        },
+        {
+          "id": "phone_friend_catch_up",
+          "label": "Phone — catch-up",
+          "subtitle": "Overlap, reschedule, gist recap.",
+          "situation": "Voice call between friends: flaky connection, recap news, reschedule if busy, humour, avoid uncomfortable gossip politely.",
+          "defaultUserRole": "Caller",
+          "defaultAiRole": "Friend",
+          "register": "casual",
+          "learnerExtras": [
+            "Echo their detail before changing topic.",
+            "Exit gracefully when time runs out."
+          ],
+          "aiExtras": [
+            "Share airtime naturally; recover from interruptions."
+          ]
+        },
+        {
+          "id": "disagree_politely_topic",
+          "label": "Disagree politely",
+          "subtitle": "Hedges, bridges, softer tone.",
+          "situation": "Low-stakes opinion chat (film ending, commute habit, caffeine): disagree with hedges and partial agreement; no insults.",
+          "defaultUserRole": "Friend",
+          "defaultAiRole": "Friend (other)",
+          "register": "neutral",
+          "learnerExtras": [
+            "Try “I see that, though I would add…”.",
+            "Pause instead of interrupting."
+          ],
+          "aiExtras": [
+            "Push back fairly without straw-man arguments."
+          ]
+        }
+      ]
+    }
+  ]
+}
