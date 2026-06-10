@@ -42,6 +42,8 @@ final class LiveVoiceViewModel {
     private(set) var inputLevel: Float = 0
     private(set) var outputLevel: Float = 0
     private(set) var sessionStartedAt: Date?
+    /// True while the engine is retrying after a network drop mid-session.
+    private(set) var reconnecting = false
     var errorMessage: String?
 
     private let settings = SettingsStore.shared
@@ -53,6 +55,9 @@ final class LiveVoiceViewModel {
     private var cooldownTask: Task<Void, Never>?
     private var hintTask: Task<Void, Never>?
     private var repairTask: Task<Void, Never>?
+    private var reconnectTask: Task<Void, Never>?
+    private var reconnectAttempts = 0
+    private let maxReconnectAttempts = 3
 
     var currentPreset: TopicPreset? { TopicCatalog.preset(setup.topicPresetId) }
 
@@ -112,30 +117,52 @@ final class LiveVoiceViewModel {
         resetSessionState()
         phase = .connecting
         sessionStartedAt = Date()
+        scenario = TopicCatalog.scenario(from: setup)
 
-        let scenario = TopicCatalog.scenario(from: setup)
-        self.scenario = scenario
+        openConnection(resume: false)
+    }
+
+    private func openConnection(resume: Bool) {
+        guard let scenario else { return }
 
         let engine = RealtimeVoiceEngine()
         self.engine = engine
-        wireEngineCallbacks(engine)
+        wireEngineCallbacks(engine, resume: resume)
 
-        let config = RealtimeVoiceEngine.sessionConfig(
+        var config = RealtimeVoiceEngine.sessionConfig(
             scenario: scenario,
             level: setup.level,
             voice: settings.realtimeVoice,
             speaksFirst: setup.speaksFirst,
             casualCompanionMode: settings.casualCompanionMode
         )
+        if resume, var instructions = config["instructions"] as? String {
+            instructions += "\n\n" + resumeContext(scenario: scenario)
+            config["instructions"] = instructions
+        }
         engine.isMuted = true
         engine.recordsAudio = settings.saveAudio && settings.saveTranscripts
         engine.connect(apiKey: settings.realtimeApiKey.trimmed, model: settings.realtimeModel, sessionConfig: config)
+    }
+
+    /// Injected into the system prompt when re-establishing a dropped session
+    /// so the AI continues the same scene instead of starting over.
+    private func resumeContext(scenario: Scenario) -> String {
+        var lines = ["SESSION RESUMED after a brief network drop. The conversation so far:"]
+        for turn in turns.suffix(12) {
+            let speaker = turn.role == .ai ? scenario.aiRole : scenario.userRole
+            lines.append("\(speaker): \(turn.text)")
+        }
+        lines.append("Continue the same scene naturally from this exact point. Do NOT restart, re-greet, or summarize the conversation.")
+        return lines.joined(separator: "\n")
     }
 
     func end() {
         cooldownTask?.cancel()
         hintTask?.cancel()
         repairTask?.cancel()
+        reconnectTask?.cancel()
+        reconnecting = false
         engine?.stopPlayback()
         engine?.disconnect()
         engine = nil
@@ -188,6 +215,8 @@ final class LiveVoiceViewModel {
         repairHistory = []
         userIsSpeaking = false
         sessionAudioFiles = []
+        reconnecting = false
+        reconnectAttempts = 0
     }
 
     private func saveSessionIfNeeded() {
@@ -214,10 +243,24 @@ final class LiveVoiceViewModel {
 
     // MARK: - Engine wiring
 
-    private func wireEngineCallbacks(_ engine: RealtimeVoiceEngine) {
+    private func wireEngineCallbacks(_ engine: RealtimeVoiceEngine, resume: Bool = false) {
         engine.onConnected = { [weak self] in
             guard let self else { return }
             self.phase = .live
+            self.reconnecting = false
+            self.reconnectAttempts = 0
+
+            if resume {
+                // Pick the flow back up: if the learner spoke last, the AI owes a reply.
+                if self.turns.last?.role == .user {
+                    self.engine?.requestResponse()
+                    self.micState = .aiSpeaking
+                } else {
+                    self.finishCooldown()
+                }
+                return
+            }
+
             if self.setup.speaksFirst == .ai {
                 self.engine?.requestResponse()
                 self.micState = .aiSpeaking
@@ -269,12 +312,41 @@ final class LiveVoiceViewModel {
         }
 
         engine.onError = { [weak self] message in
-            self?.errorMessage = message
+            guard let self else { return }
+            // Transient socket drops are handled by the reconnect path below.
+            if self.phase == .live, message.hasPrefix("Connection lost") { return }
+            self.errorMessage = message
         }
 
         engine.onDisconnected = { [weak self] in
             guard let self, self.phase == .live || self.phase == .connecting else { return }
-            self.end()
+            self.handleDisconnect()
+        }
+    }
+
+    /// Network drop mid-session: retry with backoff and restore the scene
+    /// context instead of killing the session.
+    private func handleDisconnect() {
+        guard phase == .live, reconnectAttempts < maxReconnectAttempts else {
+            if reconnecting {
+                errorMessage = "Connection lost. Your conversation was saved to History."
+            }
+            end()
+            return
+        }
+        reconnectAttempts += 1
+        reconnecting = true
+        micState = .muted
+        cooldownTask?.cancel()
+        engine?.disconnect()
+        engine = nil
+
+        let attempt = reconnectAttempts
+        reconnectTask?.cancel()
+        reconnectTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(Double(attempt)))
+            guard let self, !Task.isCancelled, self.phase == .live, self.reconnecting else { return }
+            self.openConnection(resume: true)
         }
     }
 

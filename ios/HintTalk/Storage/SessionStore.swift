@@ -38,6 +38,13 @@ final class SessionStore {
         persist()
     }
 
+    /// Delete by identity — safe to call from filtered lists.
+    func delete(_ session: PracticeSession) {
+        AudioStore.delete(session.turns.compactMap(\.audioFile))
+        sessions.removeAll { $0.id == session.id }
+        persist()
+    }
+
     func clearAll() {
         AudioStore.delete(sessions.flatMap { $0.turns.compactMap(\.audioFile) })
         sessions = []

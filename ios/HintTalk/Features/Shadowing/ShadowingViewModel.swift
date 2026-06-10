@@ -107,6 +107,7 @@ final class ShadowingViewModel: NSObject {
             phase = lesson == nil ? .pickLesson : .ready
         }
         discardUnsavedAudio()
+        AudioSessionCoordinator.shared.deactivate()
     }
 
     private func discardUnsavedAudio() {
@@ -169,10 +170,7 @@ final class ShadowingViewModel: NSObject {
 
     private func playModelLine(_ text: String) async {
         modelPlaybackStart = Date()
-
-        let session = AVAudioSession.sharedInstance()
-        try? session.setCategory(.playback, mode: .spokenAudio)
-        try? session.setActive(true)
+        try? AudioSessionCoordinator.shared.activate(.playback)
 
         if settings.useOpenAiTts, !settings.realtimeApiKey.trimmed.isEmpty {
             do {
@@ -193,7 +191,7 @@ final class ShadowingViewModel: NSObject {
             playbackContinuation = continuation
             let utterance = AVSpeechUtterance(string: text)
             utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
-            utterance.rate = 0.48
+            utterance.rate = 0.48 * Float(settings.shadowingRate)
             utterance.volume = 1.0
             synthesizer.speak(utterance)
         }
@@ -203,12 +201,36 @@ final class ShadowingViewModel: NSObject {
     private func playAudioData(_ data: Data) async throws {
         let player = try AVAudioPlayer(data: data)
         audioPlayer = player
-        modelDurationMs = player.duration * 1000
+        if settings.shadowingRate != 1.0 {
+            player.enableRate = true
+            player.rate = Float(settings.shadowingRate)
+        }
+        modelDurationMs = player.duration / settings.shadowingRate * 1000
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
             playbackContinuation = continuation
             player.delegate = self
             player.play()
         }
+    }
+
+    /// "Hear again" — abandon the current attempt at this line and replay it.
+    func replayCurrentLine() {
+        guard phase == .recording || phase == .playingModel || isGapPhase else { return }
+        flowTask?.cancel()
+        synthesizer.stopSpeaking(at: .immediate)
+        audioPlayer?.stop()
+        recorder?.stop()
+        recorder = nil
+        if let continuation = playbackContinuation {
+            playbackContinuation = nil
+            continuation.resume()
+        }
+        runFlow()
+    }
+
+    private var isGapPhase: Bool {
+        if case .gap = phase { return true }
+        return false
     }
 
     // MARK: Recording + scoring
@@ -218,9 +240,7 @@ final class ShadowingViewModel: NSObject {
     }
 
     private func startRecording() {
-        let session = AVAudioSession.sharedInstance()
-        try? session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker])
-        try? session.setActive(true)
+        try? AudioSessionCoordinator.shared.activate(.recording)
 
         recordingStart = Date()
         let settings: [String: Any] = [

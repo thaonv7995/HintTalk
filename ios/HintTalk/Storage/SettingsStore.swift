@@ -40,6 +40,8 @@ final class SettingsStore {
 
     var sttModel: String { didSet { save("sttModel", sttModel) } }
     var shadowingGapSeconds: Double { didSet { save("shadowingGapSeconds", shadowingGapSeconds) } }
+    /// Model-line playback speed multiplier (0.75 = slower listening practice).
+    var shadowingRate: Double { didSet { save("shadowingRate", shadowingRate) } }
     var useOpenAiTts: Bool { didSet { save("useOpenAiTts", useOpenAiTts) } }
     var ttsModel: String { didSet { save("ttsModel", ttsModel) } }
     var ttsVoice: String { didSet { save("ttsVoice", ttsVoice) } }
@@ -76,6 +78,7 @@ final class SettingsStore {
         autoDeleteAudio = d.object(forKey: "autoDeleteAudio") as? Bool ?? true
         sttModel = d.string(forKey: "sttModel") ?? "gpt-4o-mini-transcribe"
         shadowingGapSeconds = d.object(forKey: "shadowingGapSeconds") as? Double ?? 3
+        shadowingRate = d.object(forKey: "shadowingRate") as? Double ?? 1.0
         useOpenAiTts = d.object(forKey: "useOpenAiTts") as? Bool ?? false
         ttsModel = d.string(forKey: "ttsModel") ?? "gpt-4o-mini-tts"
         ttsVoice = d.string(forKey: "ttsVoice") ?? "alloy"

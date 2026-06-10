@@ -1,7 +1,9 @@
+import AVFoundation
 import SwiftUI
 
 struct ShadowingView: View {
     @State private var model = ShadowingViewModel()
+    @State private var settings = SettingsStore.shared
 
     var body: some View {
         NavigationStack {
@@ -98,9 +100,12 @@ struct ShadowingView: View {
                 ProgressView(value: Double(min(model.lineIndex, lesson.lines.count)), total: Double(lesson.lines.count))
                     .tint(HT.gold)
                     .padding(.horizontal, 20)
-                Text("Line \(min(model.lineIndex + 1, lesson.lines.count)) of \(lesson.lines.count)")
-                    .font(.caption)
-                    .foregroundStyle(HT.textDim)
+                HStack(spacing: 12) {
+                    Text("Line \(min(model.lineIndex + 1, lesson.lines.count)) of \(lesson.lines.count)")
+                        .font(.caption)
+                        .foregroundStyle(HT.textDim)
+                    speedPicker
+                }
             }
 
             Spacer()
@@ -136,6 +141,27 @@ struct ShadowingView: View {
                     .padding(.bottom, 8)
             }
         }
+    }
+
+    private var speedPicker: some View {
+        HStack(spacing: 0) {
+            ForEach([0.75, 1.0], id: \.self) { rate in
+                Button {
+                    settings.shadowingRate = rate
+                } label: {
+                    Text(rate == 1.0 ? "1x" : "0.75x")
+                        .font(.caption2.weight(.bold))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(
+                            Capsule().fill(settings.shadowingRate == rate ? HT.teal.opacity(0.25) : .clear)
+                        )
+                        .foregroundStyle(settings.shadowingRate == rate ? HT.teal : HT.textDim)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .background(Capsule().fill(Color.white.opacity(0.06)))
     }
 
     private var statusBadge: some View {
@@ -186,6 +212,18 @@ struct ShadowingView: View {
                             .foregroundStyle(HT.navy)
                     }
                 }
+                if model.phase == .recording || isGap {
+                    Button {
+                        model.replayCurrentLine()
+                    } label: {
+                        Label("Hear again", systemImage: "arrow.counterclockwise")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(RoundedRectangle(cornerRadius: 16).fill(Color.white.opacity(0.1)))
+                            .foregroundStyle(HT.textLight)
+                    }
+                }
                 Button {
                     model.stopRun()
                 } label: {
@@ -200,6 +238,11 @@ struct ShadowingView: View {
         }
         .padding(.horizontal, 20)
     }
+
+    private var isGap: Bool {
+        if case .gap = model.phase { return true }
+        return false
+    }
 }
 
 // MARK: - Results
@@ -207,6 +250,19 @@ struct ShadowingView: View {
 struct ShadowingResultsView: View {
     var model: ShadowingViewModel
     @State private var player = ConversationPlayer()
+    @State private var reviewSynth = AVSpeechSynthesizer()
+
+    /// A/B review: replay the model line so the learner can compare with their own take.
+    private func speakModel(_ text: String) {
+        player.stop()
+        try? AudioSessionCoordinator.shared.activate(.playback)
+        reviewSynth.stopSpeaking(at: .immediate)
+        let utterance = AVSpeechUtterance(string: text)
+        utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
+        utterance.rate = 0.48
+        utterance.volume = 1.0
+        reviewSynth.speak(utterance)
+    }
 
     var body: some View {
         ScrollView {
@@ -243,8 +299,18 @@ struct ShadowingResultsView: View {
                                 .font(.callout.weight(.medium))
                                 .foregroundStyle(HT.textLight)
                             Spacer(minLength: 0)
+                            Button {
+                                speakModel(result.target)
+                            } label: {
+                                Image(systemName: "speaker.wave.2.circle.fill")
+                                    .font(.title3)
+                                    .foregroundStyle(HT.gold)
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Play model line")
                             if let audioFile = result.audioFile, AudioStore.exists(audioFile) {
                                 Button {
+                                    reviewSynth.stopSpeaking(at: .immediate)
                                     var turn = ConversationTurn(speaker: "You", role: .user, text: result.transcript)
                                     turn.id = result.lineId
                                     turn.audioFile = audioFile
@@ -255,6 +321,7 @@ struct ShadowingResultsView: View {
                                         .foregroundStyle(HT.teal)
                                 }
                                 .buttonStyle(.plain)
+                                .accessibilityLabel("Play your recording")
                             }
                         }
                         if result.captureFailed {

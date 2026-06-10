@@ -9,6 +9,11 @@ final class ConversationPlayer: NSObject {
     private(set) var playingTurnId: String?
     private(set) var isPlayingAll = false
 
+    /// Review playback speed (applies immediately, persists across turns).
+    var playbackRate: Double = 1.0 {
+        didSet { player?.rate = Float(playbackRate) }
+    }
+
     private var player: AVAudioPlayer?
     private var queue: [ConversationTurn] = []
 
@@ -46,7 +51,7 @@ final class ConversationPlayer: NSObject {
     /// and conflict with the live-voice engine's `.playAndRecord` session.
     func releaseAudioSession() {
         stop()
-        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        AudioSessionCoordinator.shared.deactivate()
     }
 
     private func playNext() {
@@ -59,9 +64,7 @@ final class ConversationPlayer: NSObject {
     }
 
     private func start(file: String, turnId: String) {
-        let session = AVAudioSession.sharedInstance()
-        try? session.setCategory(.playback, mode: .default)
-        try? session.setActive(true)
+        try? AudioSessionCoordinator.shared.activate(.playback)
 
         guard let newPlayer = try? AVAudioPlayer(contentsOf: AudioStore.url(for: file)) else {
             if isPlayingAll { playNext() } else { stop() }
@@ -69,6 +72,8 @@ final class ConversationPlayer: NSObject {
         }
         player = newPlayer
         newPlayer.delegate = self
+        newPlayer.enableRate = true
+        newPlayer.rate = Float(playbackRate)
         playingTurnId = turnId
         newPlayer.play()
     }

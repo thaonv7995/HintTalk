@@ -15,6 +15,9 @@ struct RootView: View {
     @State private var liveVoiceModel = LiveVoiceViewModel()
     // Launch-time tab override for UI checks (e.g. simctl launch with HT_TAB=2).
     @State private var selectedTab = Int(ProcessInfo.processInfo.environment["HT_TAB"] ?? "") ?? 0
+    @State private var showOnboarding =
+        !UserDefaults.standard.bool(forKey: "onboardingDone")
+            && SettingsStore.shared.realtimeApiKey.trimmed.isEmpty
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -33,6 +36,12 @@ struct RootView: View {
             SettingsView()
                 .tabItem { Label("Settings", systemImage: "gearshape") }
                 .tag(3)
+        }
+        .fullScreenCover(isPresented: $showOnboarding) {
+            OnboardingView {
+                UserDefaults.standard.set(true, forKey: "onboardingDone")
+                showOnboarding = false
+            }
         }
     }
 }

@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// Full-screen live session: orb + mic, AI caption with Vietnamese, hint card, repair card.
 struct LiveVoiceSessionView: View {
@@ -20,6 +21,10 @@ struct LiveVoiceSessionView: View {
                     VStack(spacing: 16) {
                         if model.phase == .connecting {
                             connectingBadge
+                        }
+
+                        if model.reconnecting {
+                            reconnectingBadge
                         }
 
                         orbSection
@@ -51,6 +56,12 @@ struct LiveVoiceSessionView: View {
         .sheet(isPresented: $showScene) { sceneSheet }
         .sheet(isPresented: $showTranscript) { transcriptSheet }
         .interactiveDismissDisabled(model.phase == .live || model.phase == .connecting)
+        .onChange(of: model.micState) { old, new in
+            // Tactile "your turn" cue when the mic opens hands-free.
+            if new == .open, old != .muted {
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            }
+        }
     }
 
     // MARK: Header
@@ -112,6 +123,20 @@ struct LiveVoiceSessionView: View {
                 .foregroundStyle(HT.textDim)
         }
         .padding(.top, 8)
+    }
+
+    private var reconnectingBadge: some View {
+        HStack(spacing: 8) {
+            ProgressView()
+                .tint(HT.orange)
+            Text("Connection dropped — reconnecting…")
+                .font(.footnote.weight(.medium))
+                .foregroundStyle(HT.orange)
+        }
+        .padding(.vertical, 8)
+        .padding(.horizontal, 14)
+        .background(Capsule().fill(HT.orange.opacity(0.12)))
+        .transition(.opacity)
     }
 
     // MARK: Orb

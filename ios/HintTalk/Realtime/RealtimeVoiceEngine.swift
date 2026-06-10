@@ -4,8 +4,9 @@ import Foundation
 /// Native OpenAI Realtime client over WebSocket (PCM16 @ 24 kHz both directions).
 ///
 /// The web app uses WebRTC; on iOS we use the GA WebSocket transport instead so the app
-/// stays dependency-free and fully native (AVAudioEngine handles capture + playback with
-/// hardware echo cancellation via the `.voiceChat` audio session mode).
+/// stays dependency-free and fully native. AVAudioEngine handles capture + playback;
+/// echo on the speaker route is prevented by gating the mic while AI audio drains
+/// (see `handleCapturedBuffer`), and session config goes through AudioSessionCoordinator.
 final class RealtimeVoiceEngine: NSObject {
     // MARK: Callbacks (delivered on the main actor)
 
@@ -205,17 +206,7 @@ final class RealtimeVoiceEngine: NSObject {
     // MARK: - Audio engine
 
     private func startAudio() throws {
-        let session = AVAudioSession.sharedInstance()
-        // `.default` mode keeps full media playback volume; `.voiceChat` applies
-        // call-style gain reduction that makes the AI voice very quiet on device.
-        // Echo is acceptable because the mic stream is muted while the AI speaks.
-        try session.setCategory(
-            .playAndRecord,
-            mode: .default,
-            options: [.defaultToSpeaker, .allowBluetoothHFP, .allowBluetoothA2DP]
-        )
-        try session.setPreferredSampleRate(48000)
-        try session.setActive(true)
+        try AudioSessionCoordinator.shared.activate(.liveVoice)
 
         audioEngine.attach(playerNode)
         audioEngine.connect(playerNode, to: audioEngine.mainMixerNode, format: playbackFormat)
@@ -250,7 +241,7 @@ final class RealtimeVoiceEngine: NSObject {
                   let raw = info[AVAudioSessionInterruptionTypeKey] as? UInt,
                   AVAudioSession.InterruptionType(rawValue: raw) == .ended
             else { return }
-            try? AVAudioSession.sharedInstance().setActive(true)
+            AudioSessionCoordinator.shared.reactivate()
             self?.restartEngineIfNeeded()
         }
     }
@@ -277,7 +268,7 @@ final class RealtimeVoiceEngine: NSObject {
         playerNode.stop()
         audioEngine.inputNode.removeTap(onBus: 0)
         audioEngine.stop()
-        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        AudioSessionCoordinator.shared.deactivate()
     }
 
     private func handleCapturedBuffer(_ buffer: AVAudioPCMBuffer) {
@@ -285,6 +276,15 @@ final class RealtimeVoiceEngine: NSObject {
         notifyLevels(input: inputLevel)
 
         guard !isMuted, let converter = inputConverter else { return }
+
+        // Echo guard: `.default` session mode has no hardware AEC, so while AI
+        // audio is still draining through the built-in speaker the mic would
+        // pick the AI voice back up. Skip streaming in that window (headphones
+        // and Bluetooth routes have no echo path, so they are never gated).
+        lock.lock()
+        let aiAudioActive = pendingOutputBuffers > 0 || responseActive
+        lock.unlock()
+        if aiAudioActive, AudioSessionCoordinator.shared.isSpeakerRoute { return }
 
         let ratio = sampleRate / buffer.format.sampleRate
         let capacity = AVAudioFrameCount(Double(buffer.frameLength) * ratio) + 16

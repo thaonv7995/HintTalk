@@ -2,6 +2,28 @@ import SwiftUI
 
 struct HistoryView: View {
     @State private var store = SessionStore.shared
+    @State private var searchText = ""
+    @State private var filter: Filter = .all
+
+    enum Filter: String, CaseIterable {
+        case all = "All"
+        case roleplay = "Role-play"
+        case shadowing = "Shadowing"
+    }
+
+    private var filteredSessions: [PracticeSession] {
+        let query = searchText.trimmed.lowercased()
+        return store.sessions.filter { session in
+            switch filter {
+            case .all: break
+            case .roleplay: if session.isShadowing { return false }
+            case .shadowing: if !session.isShadowing { return false }
+            }
+            guard !query.isEmpty else { return true }
+            return session.scenarioTitle.lowercased().contains(query)
+                || session.turns.contains { $0.text.lowercased().contains(query) }
+        }
+    }
 
     var body: some View {
         NavigationStack {
@@ -14,39 +36,82 @@ struct HistoryView: View {
                     )
                 } else {
                     List {
-                        ForEach(store.sessions) { session in
-                            NavigationLink {
-                                SessionDetailView(session: session)
-                            } label: {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    HStack(spacing: 6) {
-                                        Image(systemName: session.isShadowing ? "repeat.circle" : "waveform.and.person.filled")
-                                            .font(.caption)
-                                            .foregroundStyle(session.isShadowing ? HT.gold : HT.teal)
-                                        Text(session.scenarioTitle)
-                                            .font(.subheadline.weight(.semibold))
-                                            .foregroundStyle(HT.textLight)
-                                        if session.turns.contains(where: { AudioStore.exists($0.audioFile) }) {
-                                            Image(systemName: "waveform")
-                                                .font(.caption2)
-                                                .foregroundStyle(HT.teal)
-                                        }
+                        Section {
+                            ForEach(filteredSessions) { session in
+                                NavigationLink {
+                                    SessionDetailView(session: session)
+                                } label: {
+                                    sessionRow(session)
+                                }
+                                .listRowBackground(Color.white.opacity(0.04))
+                                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                    Button(role: .destructive) {
+                                        store.delete(session)
+                                    } label: {
+                                        Label("Delete", systemImage: "trash")
                                     }
-                                    Text("\(session.startedAt.formatted(date: .abbreviated, time: .shortened)) · \(session.turns.count) lines · \(session.level.label)")
-                                        .font(.caption)
-                                        .foregroundStyle(HT.textDim)
                                 }
                             }
-                            .listRowBackground(Color.white.opacity(0.04))
+                        } header: {
+                            filterChips
+                                .textCase(nil)
+                                .listRowInsets(EdgeInsets())
                         }
-                        .onDelete { store.delete(at: $0) }
                     }
                     .scrollContentBackground(.hidden)
+                    .searchable(text: $searchText, prompt: "Search topics or lines")
+                    .overlay {
+                        if filteredSessions.isEmpty {
+                            ContentUnavailableView.search(text: searchText)
+                                .background(.clear)
+                        }
+                    }
                 }
             }
             .background(HT.pageGradient.ignoresSafeArea())
             .navigationTitle("History")
         }
+    }
+
+    private func sessionRow(_ session: PracticeSession) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 6) {
+                Image(systemName: session.isShadowing ? "repeat.circle" : "waveform.and.person.filled")
+                    .font(.caption)
+                    .foregroundStyle(session.isShadowing ? HT.gold : HT.teal)
+                Text(session.scenarioTitle)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(HT.textLight)
+                if session.turns.contains(where: { AudioStore.exists($0.audioFile) }) {
+                    Image(systemName: "waveform")
+                        .font(.caption2)
+                        .foregroundStyle(HT.teal)
+                }
+            }
+            Text("\(session.startedAt.formatted(date: .abbreviated, time: .shortened)) · \(session.turns.count) lines · \(session.level.label)")
+                .font(.caption)
+                .foregroundStyle(HT.textDim)
+        }
+    }
+
+    private var filterChips: some View {
+        HStack(spacing: 8) {
+            ForEach(Filter.allCases, id: \.self) { item in
+                Button {
+                    filter = item
+                } label: {
+                    Text(item.rawValue)
+                        .font(.caption.weight(.semibold))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Capsule().fill(filter == item ? HT.teal.opacity(0.22) : Color.white.opacity(0.06)))
+                        .foregroundStyle(filter == item ? HT.teal : HT.textDim)
+                }
+                .buttonStyle(.plain)
+            }
+            Spacer()
+        }
+        .padding(.bottom, 8)
     }
 }
 
@@ -88,6 +153,23 @@ struct SessionDetailView: View {
         .toolbar {
             ToolbarItemGroup(placement: .topBarTrailing) {
                 if hasAnyAudio {
+                    Menu {
+                        ForEach([1.0, 1.25, 1.5], id: \.self) { rate in
+                            Button {
+                                player.playbackRate = rate
+                            } label: {
+                                if player.playbackRate == rate {
+                                    Label(rateLabel(rate), systemImage: "checkmark")
+                                } else {
+                                    Text(rateLabel(rate))
+                                }
+                            }
+                        }
+                    } label: {
+                        Text(rateLabel(player.playbackRate))
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(HT.teal)
+                    }
                     Button {
                         if player.isPlayingAll {
                             player.stop()
@@ -170,6 +252,10 @@ struct SessionDetailView: View {
                 .symbolEffect(.pulse, isActive: isPlaying)
         }
         .buttonStyle(.plain)
+    }
+
+    private func rateLabel(_ rate: Double) -> String {
+        rate == 1.0 ? "1x" : String(format: "%.2gx", rate)
     }
 
     private var transcriptText: String {
