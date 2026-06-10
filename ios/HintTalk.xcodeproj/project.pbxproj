@@ -299,6 +299,7 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					6003B98431251DAFE24E3EB8 = {
+						DevelopmentTeam = MPB66BJ242;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -502,6 +503,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = MPB66BJ242;
 				INFOPLIST_FILE = HintTalk/Info.plist;
 				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -520,6 +522,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = MPB66BJ242;
 				INFOPLIST_FILE = HintTalk/Info.plist;
 				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
 				LD_RUNPATH_SEARCH_PATHS = (
