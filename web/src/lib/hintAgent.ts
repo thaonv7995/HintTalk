@@ -1,4 +1,5 @@
 import { fetchChatCompletion, type ChatMsg } from './chatCompletion';
+import { parseJsonPayload } from './jsonPayload';
 import type { ConversationTurn, HintLevel, LiveVoiceSpeaksFirst, MockScenario, StoredSettings } from '../types';
 
 export type HintPayload = {
@@ -52,26 +53,6 @@ const HINT_AGENT_SYSTEM_PROMPT = [
   '- **intermediate**: **only** a handful of **English words or short phrases** (ideas / vocabulary / chunks) the learner might use — **not** a sentence template. Pack **3–8** fragments into **one string**, separated by ** · ** (middle dot + spaces). Example shape: `sorry · running late · just arriving · platform change`. **Forbidden**: blanks, underscores (`___`), brackets with dots, gap-fill, or “complete the sentence”. No full sample dialogue sentence.',
   '- **advanced**: concise cues or keywords only (minimal scaffolding — terse reminders).',
 ].join('\n');
-
-function parseJsonPayload(value: string): unknown {
-  const trimmed = value.trim().replace(/^```(?:json)?|```$/g, '').trim();
-  try {
-    return JSON.parse(trimmed);
-  } catch (err: unknown) {
-    const errMsg = err instanceof Error ? err.message : String(err);
-    const start = trimmed.indexOf('{');
-    const end = trimmed.lastIndexOf('}');
-    if (start >= 0 && end > start) {
-      try {
-        return JSON.parse(trimmed.slice(start, end + 1));
-      } catch (err2: unknown) {
-        const err2Msg = err2 instanceof Error ? err2.message : String(err2);
-        throw new Error(`Invalid JSON: ${err2Msg}. Output was: "${trimmed.slice(0, 300)}"`, { cause: err2 });
-      }
-    }
-    throw new Error(`Response is not JSON: ${errMsg}. Output was: "${trimmed.slice(0, 300)}"`, { cause: err });
-  }
-}
 
 function asList(v: unknown): string[] {
   if (Array.isArray(v)) return v.map(String).filter(Boolean);
@@ -219,8 +200,10 @@ export async function generateHintPayload(
     },
   ];
 
+  // Generous cap: reasoning models spend invisible tokens before emitting the
+  // JSON, and a too-small budget truncates the output mid-object.
   const text = await fetchChatCompletion(settings, messages, 0.28, {
-    max_tokens: 900,
+    max_tokens: 2000,
     jsonMode: true,
     signal: options?.signal,
   });

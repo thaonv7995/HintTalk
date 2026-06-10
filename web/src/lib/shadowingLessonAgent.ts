@@ -1,6 +1,7 @@
 import type { ShadowingGenre, ShadowingLesson, StoredSettings } from '../types';
 import { ttsVoiceModelPromptOptions } from '../data/ttsVoiceModels';
 import { fetchChatCompletion, type ChatMsg } from './chatCompletion';
+import { parseJsonPayload } from './jsonPayload';
 
 export type ShadowingPromptPlan = {
   title: string;
@@ -30,26 +31,6 @@ const SHADOWING_LESSON_PROMPT = [
   'Allowed genre: announcement, radio, weather, meeting, service, podcast.',
   'focusPhrase must be a short exact phrase from the same line.',
 ].join('\n');
-
-function parseJsonPayload(value: string): unknown {
-  const trimmed = value.trim().replace(/^```(?:json)?|```$/g, '').trim();
-  try {
-    return JSON.parse(trimmed);
-  } catch (err: unknown) {
-    const errMsg = err instanceof Error ? err.message : String(err);
-    const start = trimmed.indexOf('{');
-    const end = trimmed.lastIndexOf('}');
-    if (start >= 0 && end > start) {
-      try {
-        return JSON.parse(trimmed.slice(start, end + 1));
-      } catch (err2: unknown) {
-        const err2Msg = err2 instanceof Error ? err2.message : String(err2);
-        throw new Error(`Invalid JSON: ${err2Msg}. Output was: "${trimmed.slice(0, 300)}"`, { cause: err2 });
-      }
-    }
-    throw new Error(`Response is not JSON: ${errMsg}. Output was: "${trimmed.slice(0, 300)}"`, { cause: err });
-  }
-}
 
 function cleanGenre(value: unknown): ShadowingGenre {
   const allowed: ShadowingGenre[] = ['announcement', 'radio', 'weather', 'meeting', 'service', 'podcast'];

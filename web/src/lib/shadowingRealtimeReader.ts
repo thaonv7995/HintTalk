@@ -1,5 +1,6 @@
 import type { ShadowingLesson, StoredSettings } from '../types';
 import { exchangeRealtimeSdp } from './openaiRealtime';
+import { parseJsonPayload } from './jsonPayload';
 import type { ShadowingPromptPlan } from './shadowingLessonAgent';
 
 type RealtimeEvent = {
@@ -34,26 +35,6 @@ function buildShadowingRealtimeSession(settings: StoredSettings): string {
     type: 'realtime',
     model: settings.realtimeModel,
   });
-}
-
-function parseJsonPayload(value: string): unknown {
-  const trimmed = value.trim().replace(/^```(?:json)?|```$/g, '').trim();
-  try {
-    return JSON.parse(trimmed);
-  } catch (err: unknown) {
-    const errMsg = err instanceof Error ? err.message : String(err);
-    const start = trimmed.indexOf('{');
-    const end = trimmed.lastIndexOf('}');
-    if (start >= 0 && end > start) {
-      try {
-        return JSON.parse(trimmed.slice(start, end + 1));
-      } catch (err2: unknown) {
-        const err2Msg = err2 instanceof Error ? err2.message : String(err2);
-        throw new Error(`Invalid JSON: ${err2Msg}. Output was: "${trimmed.slice(0, 300)}"`, { cause: err2 });
-      }
-    }
-    throw new Error(`Response is not JSON: ${errMsg}. Output was: "${trimmed.slice(0, 300)}"`, { cause: err });
-  }
 }
 
 function normalizeRealtimeLesson(rawText: string, plan: ShadowingPromptPlan, seed: Parameters<ShadowingRealtimeReader['generateLesson']>[0]): ShadowingLesson {

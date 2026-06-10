@@ -1,4 +1,5 @@
 import { fetchChatCompletion, type ChatMsg } from './chatCompletion';
+import { parseJsonPayload } from './jsonPayload';
 import type { ConversationTurn, HintLevel, MockScenario, RepairDecision, StoredSettings } from '../types';
 
 const MAX_RECENT_TURNS = 18;
@@ -52,26 +53,6 @@ const REPAIR_AGENT_SYSTEM_PROMPT = [
   'If shouldRepair is false, priority should be none or low and repaired/explanationVi should be empty.',
   'If shouldRepair is true, priority must be medium or high, interruptionRisk must not be high, and repaired must be one short spoken English sentence.',
 ].join('\n');
-
-function parseJsonPayload(value: string): unknown {
-  const trimmed = value.trim().replace(/^```(?:json)?|```$/g, '').trim();
-  try {
-    return JSON.parse(trimmed);
-  } catch (err: unknown) {
-    const errMsg = err instanceof Error ? err.message : String(err);
-    const start = trimmed.indexOf('{');
-    const end = trimmed.lastIndexOf('}');
-    if (start >= 0 && end > start) {
-      try {
-        return JSON.parse(trimmed.slice(start, end + 1));
-      } catch (err2: unknown) {
-        const err2Msg = err2 instanceof Error ? err2.message : String(err2);
-        throw new Error(`Invalid JSON: ${err2Msg}. Output was: "${trimmed.slice(0, 300)}"`, { cause: err2 });
-      }
-    }
-    throw new Error(`Response is not JSON: ${errMsg}. Output was: "${trimmed.slice(0, 300)}"`, { cause: err });
-  }
-}
 
 function enumValue<T extends string>(value: unknown, allowed: readonly T[], fallback: T): T {
   return typeof value === 'string' && allowed.includes(value as T) ? (value as T) : fallback;
@@ -187,6 +168,6 @@ export async function evaluateRepairOpportunity(
     },
   ];
 
-  const text = await fetchChatCompletion(settings, messages, 0.15, { max_tokens: 650, jsonMode: true, signal });
+  const text = await fetchChatCompletion(settings, messages, 0.15, { max_tokens: 1500, jsonMode: true, signal });
   return normalizeRepairDecision(parseJsonPayload(text), cleanUserLine);
 }
