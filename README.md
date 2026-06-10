@@ -131,6 +131,97 @@ Then open:
 http://localhost:9000/live-voice
 ```
 
+## Deploy To Production
+
+There are two supported deployment options. Both serve the app and the `/openai` proxy from a single process listening on `PORT` (default `21079`). A `GET /healthz` endpoint is available for health checks, and the server shuts down gracefully on `SIGTERM`/`SIGINT`.
+
+> Read the Security Notes above first — this app stores API keys in browser `localStorage` and is intended for personal use, not public multi-user deployment.
+
+### Option 1: Docker
+
+Build and run on the server (or build locally / in CI and push to a registry):
+
+```bash
+# On the server, from the repository root
+docker compose up --build -d
+
+# Status + health
+docker compose ps
+docker compose logs --tail=50
+
+# Update to a new version
+git pull && docker compose up --build -d
+```
+
+The compose file includes a healthcheck, `restart: unless-stopped`, and log rotation. To change the host port:
+
+```bash
+HINTTALK_PORT=8080 docker compose up --build -d
+```
+
+To build a standalone image without compose:
+
+```bash
+docker build -t hinttalk:latest .
+docker run -d --name hinttalk -p 21079:21079 --restart unless-stopped hinttalk:latest
+```
+
+### Option 2: Bare Node.js Process On The Server
+
+The runtime has **no npm dependencies** (`server.mjs` only uses Node built-ins), so a release is just `dist/` + `server.mjs`. The only server requirement is Node.js 22+.
+
+Package a release tarball from your machine:
+
+```bash
+./deploy/package-release.sh
+# → release/hinttalk-<timestamp>.tar.gz
+```
+
+Ship and extract it on the server:
+
+```bash
+scp release/hinttalk-latest.tar.gz user@server:/tmp/
+ssh user@server
+sudo mkdir -p /opt/hinttalk
+sudo tar -xzf /tmp/hinttalk-latest.tar.gz -C /opt/hinttalk
+```
+
+Then keep it running with **systemd** (recommended on Linux servers):
+
+```bash
+sudo useradd --system --no-create-home --shell /usr/sbin/nologin hinttalk || true
+sudo chown -R hinttalk:hinttalk /opt/hinttalk
+sudo cp /opt/hinttalk/deploy/hinttalk.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now hinttalk
+systemctl status hinttalk
+```
+
+Or with **PM2** if you prefer:
+
+```bash
+cd /opt/hinttalk
+pm2 start deploy/ecosystem.config.cjs
+pm2 save && pm2 startup
+```
+
+Verify either option:
+
+```bash
+curl http://localhost:21079/healthz
+# {"status":"ok","uptime":…}
+```
+
+### Reverse Proxy / HTTPS
+
+The realtime voice feature uses `getUserMedia`, which browsers only allow on `https://` origins (or `http://localhost`). For any non-localhost deployment, put the app behind a TLS-terminating reverse proxy (Caddy, nginx + certbot, Traefik, …). Example with Caddy:
+
+```text
+hinttalk.example.com {
+    reverse_proxy localhost:21079
+}
+```
+
 ## Configure The App
 
 1. Open `/live-voice`.

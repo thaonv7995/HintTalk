@@ -21,4 +21,7 @@ COPY --from=build --chown=node:node /app/server.mjs ./server.mjs
 USER node
 EXPOSE 21079
 
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD ["node", "-e", "fetch('http://localhost:'+(process.env.PORT||21079)+'/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+
 CMD ["node", "server.mjs"]

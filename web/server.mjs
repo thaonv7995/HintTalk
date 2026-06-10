@@ -261,6 +261,11 @@ function proxyGeneric(req, res) {
 }
 
 const server = http.createServer((req, res) => {
+  if (req.url === '/healthz') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ status: 'ok', uptime: process.uptime() }));
+    return;
+  }
   if (req.url.startsWith('/openai')) {
     proxyOpenAI(req, res);
     return;
@@ -279,3 +284,23 @@ const server = http.createServer((req, res) => {
 server.listen(PORT, () => {
   console.log(`HintTalk static + OpenAI proxy → http://localhost:${PORT}`);
 });
+
+// Graceful shutdown — required when running as PID 1 in a container
+// (default SIGTERM disposition is ignored for PID 1) and lets systemd/PM2
+// stop the process cleanly instead of escalating to SIGKILL.
+let shuttingDown = false;
+function shutdown(signal) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  console.log(`${signal} received, closing server…`);
+  server.close(() => {
+    console.log('Server closed. Bye.');
+    process.exit(0);
+  });
+  setTimeout(() => {
+    console.error('Forced exit after 10s grace period.');
+    process.exit(1);
+  }, 10_000).unref();
+}
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));

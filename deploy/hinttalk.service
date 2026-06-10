@@ -1,0 +1,41 @@
+# systemd unit for HintTalk (Option 2: bare Node.js process)
+#
+# Install:
+#   sudo mkdir -p /opt/hinttalk
+#   sudo tar -xzf hinttalk-<version>.tar.gz -C /opt/hinttalk
+#   sudo useradd --system --no-create-home --shell /usr/sbin/nologin hinttalk || true
+#   sudo chown -R hinttalk:hinttalk /opt/hinttalk
+#   sudo cp /opt/hinttalk/deploy/hinttalk.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now hinttalk
+#
+# Check:
+#   systemctl status hinttalk
+#   curl http://localhost:21079/healthz
+
+[Unit]
+Description=HintTalk — English speaking practice app (static + OpenAI proxy)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=hinttalk
+Group=hinttalk
+WorkingDirectory=/opt/hinttalk
+ExecStart=/usr/bin/env node /opt/hinttalk/server.mjs
+Environment=NODE_ENV=production
+Environment=PORT=21079
+Restart=always
+RestartSec=3
+TimeoutStopSec=15
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+
+[Install]
+WantedBy=multi-user.target
