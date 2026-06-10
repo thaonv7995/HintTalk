@@ -1,0 +1,33 @@
+[     204ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:5188/node_modules/.vite/deps/react-dom_client.js?v=98de4cc7:14336
+[ 1957210ms] ReferenceError: slowLine is not defined
+    at ShadowingPage (http://127.0.0.1:5188/src/pages/ShadowingPage.tsx?t=1778451190741:1072:22)
+    at Object.react_stack_bottom_frame (http://127.0.0.1:5188/node_modules/.vite/deps/react-dom_client.js?v=98de4cc7:12867:12)
+    at renderWithHooks (http://127.0.0.1:5188/node_modules/.vite/deps/react-dom_client.js?v=98de4cc7:4212:19)
+    at updateFunctionComponent (http://127.0.0.1:5188/node_modules/.vite/deps/react-dom_client.js?v=98de4cc7:5568:16)
+    at beginWork (http://127.0.0.1:5188/node_modules/.vite/deps/react-dom_client.js?v=98de4cc7:6139:20)
+    at runWithFiberInDEV (http://127.0.0.1:5188/node_modules/.vite/deps/react-dom_client.js?v=98de4cc7:850:66)
+    at performUnitOfWork (http://127.0.0.1:5188/node_modules/.vite/deps/react-dom_client.js?v=98de4cc7:8428:92)
+    at workLoopSync (http://127.0.0.1:5188/node_modules/.vite/deps/react-dom_client.js?v=98de4cc7:8324:37)
+    at renderRootSync (http://127.0.0.1:5188/node_modules/.vite/deps/react-dom_client.js?v=98de4cc7:8308:6)
+    at performWorkOnRoot (http://127.0.0.1:5188/node_modules/.vite/deps/react-dom_client.js?v=98de4cc7:7993:27)
+[ 1957210ms] [WARNING] %s
+
+%s
+ An error occurred in the <ShadowingPage> component. Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries. @ http://127.0.0.1:5188/@vite/client:509
+[ 4005865ms] The requested module '/src/lib/endpoints.ts?t=1778453239340' does not provide an export named 'openAiAudioSpeechUrl'
+[ 4558834ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:5188/node_modules/.vite/deps/react-dom_client.js?v=98de4cc7:14336
+[ 4934836ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:5188/node_modules/.vite/deps/react-dom_client.js?v=98de4cc7:14336
+[ 5654876ms] [LOG] [vite] server connection lost. Polling for restart... @ http://127.0.0.1:5188/@vite/client:968
+[ 5654974ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:5188/node_modules/.vite/deps/react-dom_client.js?v=98de4cc7:14336
+[22329963ms] [LOG] [vite] server connection lost. Polling for restart... @ http://127.0.0.1:5188/@vite/client:968
+[22330146ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:5188/node_modules/.vite/deps/react-dom_client.js?v=98de4cc7:14336
+[59217168ms] [LOG] [vite] server connection lost. Polling for restart... @ http://127.0.0.1:5188/@vite/client:968
+[59217298ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:5188/node_modules/.vite/deps/react-dom_client.js?v=98de4cc7:14336
+[61155239ms] [LOG] [vite] server connection lost. Polling for restart... @ http://127.0.0.1:5188/@vite/client:968
+[61155321ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:5188/node_modules/.vite/deps/react-dom_client.js?v=98de4cc7:14336
+[99188298ms] [LOG] [vite] server connection lost. Polling for restart... @ http://127.0.0.1:5188/@vite/client:968
+[99188426ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:5188/node_modules/.vite/deps/react-dom_client.js?v=98de4cc7:14336
+[100005906ms] [LOG] [vite] server connection lost. Polling for restart... @ http://127.0.0.1:5188/@vite/client:968
+[100006028ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:5188/node_modules/.vite/deps/react-dom_client.js?v=98de4cc7:14336
+[102418743ms] [LOG] [vite] server connection lost. Polling for restart... @ http://127.0.0.1:5188/@vite/client:968

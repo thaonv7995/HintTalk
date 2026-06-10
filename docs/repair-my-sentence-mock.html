@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>HintTalk - Repair My Sentence mock</title>
+    <link rel="icon" href="../web/public/favicon.svg" />
+    <link rel="stylesheet" href="../web/src/index.css" />
+    <style>
+      /*
+        This file intentionally reuses the real Live Voice DOM classes from
+        web/src/pages/LiveVoiceSessionPage.tsx and web/src/index.css.
+        Only the Repair card and static mock orb need extra styles.
+      */
+      .repair-mock .live-particle-orb__canvas {
+        border-radius: 999px;
+        background:
+          radial-gradient(circle at 50% 48%, rgba(252, 255, 250, 0.95) 0 3%, rgba(143, 232, 222, 0.92) 4% 19%, rgba(63, 183, 200, 0.78) 20% 30%, transparent 31%),
+          repeating-radial-gradient(circle at 50% 50%, rgba(126, 232, 244, 0.55) 0 1px, transparent 1px 12px);
+        opacity: 0.96;
+      }
+
+      .repair-mock .live-particle-orb--active .live-particle-orb__canvas {
+        box-shadow: 0 0 48px rgba(63, 183, 200, 0.1);
+      }
+
+      .repair-card {
+        gap: 8px;
+      }
+
+      .repair-original {
+        margin: 0;
+        max-width: min(38ch, 100%);
+        color: rgba(239, 248, 243, 0.46);
+        font-size: clamp(0.82rem, 0.7rem + 0.28vw, 0.96rem);
+        line-height: 1.48;
+        text-decoration: line-through;
+        text-decoration-color: rgba(239, 248, 243, 0.32);
+        text-decoration-thickness: 1px;
+      }
+
+      .repair-better {
+        margin: 0;
+        max-width: min(38ch, 100%);
+        margin-inline: auto;
+        font-family: Lexend, Inter, ui-sans-serif, system-ui, sans-serif;
+        font-size: clamp(1.05rem, 0.92rem + 0.52vw, 1.42rem);
+        font-weight: 500;
+        line-height: 1.6;
+        letter-spacing: 0.005em;
+        color: rgba(246, 250, 252, 0.96);
+        overflow-wrap: break-word;
+        word-break: break-word;
+        text-wrap: pretty;
+      }
+
+      .repair-note {
+        margin: 6px 0 0;
+        padding-top: 2px;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        font-size: clamp(0.78rem, 0.64rem + 0.38vw, 1.05rem);
+        line-height: 1.58;
+        font-weight: 480;
+        color: rgba(228, 238, 232, 0.62);
+        overflow-wrap: break-word;
+        word-break: break-word;
+        text-wrap: pretty;
+      }
+
+      .repair-actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 8px;
+      }
+
+      .repair-action {
+        min-height: 32px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: rgba(0, 0, 0, 0.22);
+        color: rgba(239, 248, 243, 0.82);
+        padding: 0 12px;
+        font-size: 0.74rem;
+        font-weight: 900;
+        cursor: pointer;
+      }
+
+      .repair-action--primary {
+        border-color: rgba(63, 183, 200, 0.46);
+        background: rgba(63, 183, 200, 0.14);
+        color: rgba(232, 255, 250, 0.96);
+      }
+
+      .repair-repeat {
+        display: none;
+        margin: 4px 0 0;
+        max-width: min(38ch, 100%);
+        font-size: 0.82rem;
+        line-height: 1.42;
+        font-weight: 760;
+        color: rgba(243, 211, 108, 0.9);
+      }
+
+      .repair-repeat.is-active {
+        display: block;
+      }
+
+      .repair-mock .live-hint-stack {
+        max-height: min(54vh, 560px);
+      }
+
+      @media (max-width: 1100px) {
+        .repair-better,
+        .repair-original,
+        .repair-note,
+        .repair-repeat {
+          max-width: none;
+          margin-inline: 0;
+        }
+      }
+    </style>
+  </head>
+  <body class="voice-page">
+    <main class="voice-app talking-room live-session-focus repair-mock">
+      <audio autoplay playsinline hidden></audio>
+
+      <header class="voice-header voice-header--compact">
+        <button type="button" class="voice-header-back" aria-label="Exit session">
+          <img class="voice-header-mark" src="../web/public/favicon.svg" width="24" height="24" alt="" decoding="async" />
+          HintTalk
+        </button>
+
+        <div class="voice-header-meta">
+          <div class="voice-header-select-wrap voice-header-topic-wrap">
+            <button
+              type="button"
+              id="hinttalk-live-topic-trigger"
+              class="voice-header-topic-trigger"
+              aria-haspopup="dialog"
+              aria-expanded="false"
+              aria-label="Coffee shop - order and sit in. Open topic chooser."
+            >
+              <span class="voice-header-topic-trigger-text">Coffee shop - order and sit in</span>
+            </button>
+          </div>
+
+          <div class="voice-header-select-wrap voice-header-level-wrap">
+            <select id="hinttalk-live-level" class="voice-header-select" aria-label="Difficulty for hints">
+              <option value="beginner">Beginner</option>
+              <option value="intermediate" selected>Intermediate</option>
+              <option value="advanced">Advanced</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="voice-header-trailing">
+          <button
+            type="button"
+            class="voice-header-icon-btn voice-header-icon-btn--reload"
+            aria-label="Clear session and start fresh"
+            title="Clear session"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true" class="voice-header-reload-icon">
+              <path
+                d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"
+                stroke="currentColor"
+                stroke-width="1.75"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path d="M21 3v5h-5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
+              <path
+                d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"
+                stroke="currentColor"
+                stroke-width="1.75"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path d="M3 21v-5h5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </button>
+
+          <button type="button" class="voice-header-icon-btn" aria-label="Settings" title="Settings">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M12 15a3 3 0 100-6 3 3 0 000 6z"
+                stroke="currentColor"
+                stroke-width="1.75"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33h.09a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51h.09a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82v.09a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"
+                stroke="currentColor"
+                stroke-width="1.35"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <section class="talk-stage talk-stage--focus talk-stage--tri">
+        <aside class="live-ai-script live-ai-script--top live-ai-script--compact" aria-label="AI script - situation you and the AI are acting out">
+          <div class="live-ai-script-head">
+            <span class="live-ai-script-tag">Context</span>
+            <span class="live-ai-script-title-inline">Practice a short cafe order</span>
+          </div>
+
+          <div class="live-ai-script-role-row">
+            <label class="live-ai-script-role-inline" title="Your speaking part in this scene">
+              <span class="live-ai-script-role-label">You</span>
+              <input
+                type="text"
+                class="live-ai-script-role-input"
+                value="Customer"
+                autocomplete="off"
+                aria-label="Who you speak as in this scene"
+                style="width:100%;box-sizing:border-box;padding:10px 12px 10px 0;border-radius:12px;border:1px solid rgba(255,255,255,0.12);background:rgba(0,0,0,0.25);color:inherit;font:inherit;display:flex;flex-wrap:wrap;text-align:center;vertical-align:middle;"
+              />
+            </label>
+
+            <button type="button" class="live-ai-script-swap-btn" title="Swap your part and the assistant's part" aria-label="Swap your role with the assistant role">
+              ⇄
+            </button>
+
+            <label class="live-ai-script-role-inline" title="Role the realtime assistant plays">
+              <span class="live-ai-script-role-label">Agent</span>
+              <input
+                type="text"
+                class="live-ai-script-role-input"
+                value="Barista"
+                autocomplete="off"
+                aria-label="Who the assistant speaks as"
+                style="width:100%;box-sizing:border-box;padding:10px 12px 10px 0;border-radius:12px;border:1px solid rgba(255,255,255,0.12);background:rgba(0,0,0,0.25);color:inherit;font:inherit;display:flex;flex-wrap:wrap;text-align:center;vertical-align:middle;"
+              />
+            </label>
+          </div>
+
+          <p class="live-ai-script-prompt" style="white-space: pre-wrap">
+You are ordering coffee at a busy cafe. Ask for your drink, say whether you will stay, and respond politely if the barista asks a follow-up.</p>
+        </aside>
+
+        <div class="live-stage-columns">
+          <div class="live-caption-col" aria-live="polite">
+            <div class="live-voice-caption-block live-voice-caption-block--script">
+              <span class="live-voice-caption-tag live-voice-caption-tag--paired">
+                <span class="live-voice-caption-tag-key">Assistant speaks as</span>
+                <span class="live-voice-caption-tag-value">Barista</span>
+              </span>
+              <p class="live-ai-line">Hi there. What would you like to order today?</p>
+              <p class="live-voice-line-vi">Xin chao. Hom nay ban muon goi mon gi?</p>
+            </div>
+          </div>
+
+          <div class="talk-main talk-core">
+            <footer class="live-session-footer">
+              <div class="live-orb-stack">
+                <div class="conversation-pulse conversation-pulse--compact">
+                  <div class="live-particle-orb live-particle-orb--active" data-state="listening">
+                    <canvas class="live-particle-orb__canvas" aria-hidden="true"></canvas>
+                  </div>
+                </div>
+              </div>
+
+              <div class="voice-controls voice-controls--compact voice-controls--minimal live-voice-controls-row">
+                <button type="button" class="live-voice-round-btn live-voice-round-btn--end" title="Exit session" aria-label="Exit session">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M7 7l10 10M17 7L7 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  </svg>
+                </button>
+
+                <div class="live-voice-mic-shell live-voice-mic-shell--user-voice">
+                  <div class="live-voice-mic-shell__frame">
+                    <button
+                      type="button"
+                      class="live-voice-round-btn live-voice-round-btn--mic live-voice-round-btn--mic-hot"
+                      title="Mute microphone"
+                      aria-label="Mute microphone"
+                      aria-describedby="live-voice-mic-status-line"
+                    >
+                      <svg class="live-voice-mic-svg" width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M12 15a3 3 0 003-3V6a3 3 0 10-6 0v6a3 3 0 003 3z" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" />
+                        <path d="M19 10v1a7 7 0 01-14 0v-1M12 19v3M9 22h6" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" />
+                      </svg>
+                    </button>
+                  </div>
+                  <p id="live-voice-mic-status-line" class="live-voice-sr-only" role="status" aria-live="polite">Repair suggestion ready</p>
+                </div>
+              </div>
+            </footer>
+          </div>
+
+          <aside class="live-hint-rail" aria-label="Hints">
+            <div class="live-hint-stack">
+              <div class="live-hint-card repair-card">
+                <span class="live-voice-caption-tag live-hint-rail-tag">Repair</span>
+                <p class="repair-original" lang="en">I want order coffee and sit here.</p>
+                <p class="repair-better" lang="en">I'd like to order a coffee to have here, please.</p>
+                <p class="repair-note" lang="vi">Dung "I'd like to..." de nghe lich su va tu nhien hon khi goi mon. "To have here" la dung tai quan.</p>
+                <div class="repair-actions">
+                  <button type="button" class="repair-action repair-action--primary" id="practiceBtn">Practice this</button>
+                  <button type="button" class="repair-action" id="continueBtn">Continue</button>
+                  <button type="button" class="repair-action" id="skipBtn">Skip</button>
+                </div>
+                <p class="repair-repeat" id="repeatLine">Mic is listening. Say the repaired sentence once, then the barista continues.</p>
+              </div>
+
+              <div class="live-hint-card">
+                <span class="live-voice-caption-tag live-hint-rail-tag">Hint</span>
+                <p class="live-hint-card-p live-hint-card-p--primary" lang="en">polite order · for here · small latte · please</p>
+                <p class="live-hint-card-vi" lang="vi">Goi y nhanh neu ban muon tu noi cau moi.</p>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const statusLine = document.getElementById('live-voice-mic-status-line');
+      const repeatLine = document.getElementById('repeatLine');
+      const practiceBtn = document.getElementById('practiceBtn');
+      const continueBtn = document.getElementById('continueBtn');
+      const skipBtn = document.getElementById('skipBtn');
+
+      practiceBtn.addEventListener('click', () => {
+        repeatLine.classList.add('is-active');
+        statusLine.textContent = 'Listening for repaired sentence';
+      });
+
+      continueBtn.addEventListener('click', () => {
+        repeatLine.classList.remove('is-active');
+        statusLine.textContent = 'Accepted - continuing role-play';
+      });
+
+      skipBtn.addEventListener('click', () => {
+        repeatLine.classList.remove('is-active');
+        statusLine.textContent = 'Repair skipped';
+      });
+    </script>
+  </body>
+</html>

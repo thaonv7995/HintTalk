@@ -1,0 +1,79 @@
+import type { ShadowingLesson } from '../types';
+
+export const SHADOWING_LESSONS: ShadowingLesson[] = [
+  {
+    id: 'airport-boarding',
+    title: 'Airport boarding announcement',
+    level: 'intermediate',
+    genre: 'announcement',
+    voiceHint: 'US voice',
+    targetWpm: 142,
+    lines: [
+      { id: 'airport-1', text: 'Good evening, passengers.', focusPhrase: 'Good evening' },
+      { id: 'airport-2', text: 'The flight to Singapore is now boarding at gate twelve.', focusPhrase: 'now boarding' },
+      { id: 'airport-3', text: 'Please have your boarding passes and passports ready.', focusPhrase: 'boarding passes' },
+      { id: 'airport-4', text: 'Passengers seated in rows twenty through thirty may board first.', focusPhrase: 'may board first' },
+      { id: 'airport-5', text: 'Thank you for your patience, and enjoy your flight.', focusPhrase: 'enjoy your flight' },
+    ],
+  },
+  {
+    id: 'train-platform-change',
+    title: 'Train platform change',
+    level: 'intermediate',
+    genre: 'announcement',
+    voiceHint: 'Neutral voice',
+    targetWpm: 136,
+    lines: [
+      { id: 'train-1', text: 'Attention, passengers waiting for the northbound train.', focusPhrase: 'Attention, passengers' },
+      { id: 'train-2', text: 'The departure platform has changed from platform two to platform five.', focusPhrase: 'platform five' },
+      { id: 'train-3', text: 'Please use the stairs or elevator near the main ticket hall.', focusPhrase: 'ticket hall' },
+      { id: 'train-4', text: 'The train is expected to arrive in approximately six minutes.', focusPhrase: 'six minutes' },
+    ],
+  },
+  {
+    id: 'weather-update',
+    title: 'Morning weather update',
+    level: 'intermediate',
+    genre: 'weather',
+    voiceHint: 'Radio voice',
+    targetWpm: 148,
+    lines: [
+      { id: 'weather-1', text: 'Here is your morning weather update.', focusPhrase: 'weather update' },
+      { id: 'weather-2', text: 'Clouds will clear by late morning, with sunshine in the afternoon.', focusPhrase: 'late morning' },
+      { id: 'weather-3', text: 'Temperatures will reach twenty seven degrees by three o’clock.', focusPhrase: 'twenty seven degrees' },
+      { id: 'weather-4', text: 'Light winds are expected along the coast tonight.', focusPhrase: 'light winds' },
+    ],
+  },
+  {
+    id: 'radio-news-brief',
+    title: 'Radio news brief',
+    level: 'advanced',
+    genre: 'radio',
+    voiceHint: 'News voice',
+    targetWpm: 164,
+    lines: [
+      { id: 'news-1', text: 'Local officials announced a new transit plan this morning.', focusPhrase: 'transit plan' },
+      { id: 'news-2', text: 'The proposal includes expanded bus routes and faster airport connections.', focusPhrase: 'expanded bus routes' },
+      { id: 'news-3', text: 'Public feedback will be collected over the next three weeks.', focusPhrase: 'Public feedback' },
+      { id: 'news-4', text: 'A final vote is expected before the end of the quarter.', focusPhrase: 'final vote' },
+    ],
+  },
+  {
+    id: 'meeting-update',
+    title: 'Meeting update',
+    level: 'advanced',
+    genre: 'meeting',
+    voiceHint: 'Business voice',
+    targetWpm: 156,
+    lines: [
+      { id: 'meeting-1', text: 'Before we move on, let me summarize the main decision.', focusPhrase: 'main decision' },
+      { id: 'meeting-2', text: 'The launch timeline stays the same, but the review process changes.', focusPhrase: 'review process' },
+      { id: 'meeting-3', text: 'Each team should send a short status update by Friday afternoon.', focusPhrase: 'Friday afternoon' },
+      { id: 'meeting-4', text: 'We will revisit open risks in next week’s planning session.', focusPhrase: 'open risks' },
+    ],
+  },
+];
+
+export function getShadowingLesson(id: string): ShadowingLesson | undefined {
+  return SHADOWING_LESSONS.find((lesson) => lesson.id === id);
+}

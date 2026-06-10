@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>HintTalk - Shadowing Mode mock</title>
+    <link rel="icon" href="../web/public/favicon.svg" />
+    <link rel="stylesheet" href="../web/src/index.css" />
+    <style>
+      .shadowing-mock .voice-header-meta {
+        justify-content: center;
+      }
+
+      .shadow-mode-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        padding: 2px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 999px;
+        background: rgba(0, 0, 0, 0.22);
+      }
+
+      .shadow-mode-toggle button {
+        min-height: 32px;
+        border: 0;
+        border-radius: 999px;
+        padding: 0 12px;
+        background: transparent;
+        color: rgba(239, 248, 243, 0.56);
+        font-size: 0.78rem;
+        font-weight: 900;
+      }
+
+      .shadow-mode-toggle button.is-active {
+        background: rgba(63, 183, 200, 0.18);
+        color: rgba(239, 248, 243, 0.94);
+      }
+
+      .shadowing-stage {
+        grid-template-rows: auto minmax(360px, 1fr);
+      }
+
+      .shadowing-context {
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+      }
+
+      .shadowing-context .live-ai-script-head {
+        justify-content: center;
+      }
+
+      .shadowing-title {
+        margin: 0;
+        font-size: clamp(1rem, 0.86rem + 0.4vw, 1.24rem);
+        line-height: 1.25;
+        font-weight: 850;
+        color: rgba(239, 248, 243, 0.9);
+      }
+
+      .shadowing-sub {
+        margin: 4px 0 0;
+        color: rgba(239, 248, 243, 0.48);
+        font-size: 0.78rem;
+        font-weight: 760;
+      }
+
+      .shadowing-mock .live-stage-columns {
+        grid-template-columns:
+          minmax(220px, min(520px, min(34vw, 36rem)))
+          minmax(220px, min(500px, min(32vw, 34rem)))
+          minmax(150px, min(320px, min(20vw, 24rem)));
+      }
+
+      .shadow-line {
+        display: grid;
+        justify-items: center;
+        gap: 14px;
+      }
+
+      .shadow-line-count {
+        color: rgba(63, 183, 200, 0.92);
+      }
+
+      .shadow-text {
+        margin: 0;
+        max-width: min(13ch, 100%);
+        font-family: "Source Sans 3", Inter, ui-sans-serif, system-ui, sans-serif;
+        font-size: clamp(2.15rem, 1.2rem + 2.7vw, 4rem);
+        font-weight: 700;
+        line-height: 1.04;
+        letter-spacing: 0;
+        color: rgba(252, 252, 248, 0.98);
+        text-align: center;
+        text-wrap: balance;
+      }
+
+      .shadow-text .is-current {
+        color: rgba(143, 232, 222, 0.98);
+        text-shadow: 0 0 24px rgba(63, 183, 200, 0.16);
+      }
+
+      .shadow-phrase {
+        display: inline-flex;
+        align-items: center;
+        min-height: 30px;
+        border-radius: 999px;
+        border: 1px solid rgba(143, 232, 222, 0.24);
+        background: rgba(63, 183, 200, 0.1);
+        color: rgba(229, 255, 250, 0.88);
+        padding: 0 12px;
+        font-size: 0.78rem;
+        font-weight: 900;
+      }
+
+      .shadowing-mock .live-particle-orb {
+        width: min(58vw, 268px);
+        height: min(58vw, 268px);
+      }
+
+      .shadowing-mock .live-particle-orb__canvas {
+        border-radius: 999px;
+        background:
+          radial-gradient(circle at 50% 48%, rgba(252, 255, 250, 0.96) 0 3%, rgba(143, 232, 222, 0.92) 4% 18%, rgba(63, 183, 200, 0.76) 19% 30%, transparent 31%),
+          repeating-radial-gradient(circle at 50% 50%, rgba(126, 232, 244, 0.52) 0 1px, transparent 1px 12px);
+      }
+
+      .shadow-countdown {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        pointer-events: none;
+      }
+
+      .shadow-countdown span {
+        display: grid;
+        place-items: center;
+        width: 58px;
+        height: 58px;
+        border-radius: 999px;
+        border: 1px solid rgba(243, 211, 108, 0.38);
+        background: rgba(9, 18, 16, 0.62);
+        color: rgba(255, 239, 183, 0.96);
+        font-size: 1.42rem;
+        font-weight: 950;
+        box-shadow: 0 0 32px rgba(243, 211, 108, 0.18);
+      }
+
+      .shadow-status {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        color: rgba(239, 248, 243, 0.62);
+        font-size: 0.8rem;
+        font-weight: 850;
+      }
+
+      .shadow-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--gold);
+        box-shadow: 0 0 18px rgba(243, 211, 108, 0.46);
+      }
+
+      .shadow-rail {
+        gap: 18px;
+      }
+
+      .shadow-mini-progress {
+        display: grid;
+        gap: 8px;
+        width: min(100%, 220px);
+      }
+
+      .shadow-progress-track {
+        height: 4px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.08);
+        overflow: hidden;
+      }
+
+      .shadow-progress-track span {
+        display: block;
+        width: 38%;
+        height: 100%;
+        background: rgba(143, 232, 222, 0.88);
+      }
+
+      .shadow-side-text {
+        margin: 0;
+        max-width: 24ch;
+        color: rgba(239, 248, 243, 0.54);
+        font-size: 0.88rem;
+        line-height: 1.5;
+      }
+
+      .shadow-controls {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      .shadow-control {
+        min-height: 34px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: rgba(0, 0, 0, 0.22);
+        color: rgba(239, 248, 243, 0.82);
+        padding: 0 12px;
+        font-size: 0.74rem;
+        font-weight: 900;
+      }
+
+      .shadow-control--primary {
+        border-color: rgba(63, 183, 200, 0.46);
+        background: rgba(63, 183, 200, 0.14);
+        color: rgba(232, 255, 250, 0.96);
+      }
+
+      .shadow-capture-mini {
+        margin: 0;
+        max-width: min(24ch, 100%);
+        color: rgba(239, 248, 243, 0.46);
+        font-size: 0.8rem;
+        line-height: 1.45;
+      }
+
+      @media (max-width: 1100px) {
+        .shadowing-mock .live-stage-columns {
+          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        }
+
+        .shadow-text {
+          max-width: min(15ch, 100%);
+        }
+      }
+
+      @media (max-width: 720px) {
+        .shadowing-mock .voice-header {
+          padding: 12px 14px;
+          gap: 10px;
+        }
+
+        .shadowing-mock .voice-header-meta {
+          display: flex !important;
+          justify-content: flex-end;
+          flex: 1;
+        }
+
+        .shadowing-mock .shadow-mode-toggle,
+        .shadowing-mock .voice-header-level-wrap {
+          display: none !important;
+        }
+
+        .shadowing-mock .voice-header-topic-wrap {
+          max-width: min(44vw, 210px);
+        }
+
+        .shadowing-mock .live-ai-script.live-ai-script--top {
+          max-height: none;
+        }
+
+        .shadowing-mock .live-stage-columns {
+          grid-template-columns: minmax(0, 1fr);
+          grid-template-rows: auto auto auto;
+          grid-template-areas:
+            "caption"
+            "core"
+            "hint";
+          gap: 26px 12px;
+        }
+
+        .shadowing-mock .talk-main.talk-core {
+          min-height: 230px;
+        }
+
+        .shadowing-mock .live-particle-orb {
+          width: min(64vw, 236px);
+          height: min(64vw, 236px);
+        }
+
+        .shadow-text {
+          max-width: min(12ch, 100%);
+          font-size: clamp(2rem, 1.05rem + 8vw, 3.1rem);
+        }
+
+        .shadow-phrase,
+        .shadow-side-text,
+        .shadow-capture-mini {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body class="voice-page">
+    <main class="voice-app talking-room live-session-focus shadowing-mock">
+      <header class="voice-header voice-header--compact">
+        <button type="button" class="voice-header-back" aria-label="Exit shadowing">
+          <img class="voice-header-mark" src="../web/public/favicon.svg" width="24" height="24" alt="" decoding="async" />
+          HintTalk
+        </button>
+
+        <div class="voice-header-meta">
+          <div class="shadow-mode-toggle" aria-label="Speaking mode">
+            <button type="button">Role-play</button>
+            <button type="button" class="is-active">Shadowing</button>
+          </div>
+          <div class="voice-header-select-wrap voice-header-topic-wrap">
+            <button type="button" class="voice-header-topic-trigger" aria-label="Choose shadowing lesson">
+              <span class="voice-header-topic-trigger-text">Airport boarding announcement</span>
+            </button>
+          </div>
+          <div class="voice-header-select-wrap voice-header-level-wrap">
+            <select class="voice-header-select" aria-label="Shadowing level">
+              <option>Intermediate</option>
+              <option>Advanced</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="voice-header-trailing">
+          <button type="button" class="voice-header-icon-btn" aria-label="Replay line" title="Replay line">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M4 7h11a5 5 0 010 10H8" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M7 4L4 7l3 3" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </button>
+          <button type="button" class="voice-header-icon-btn" aria-label="Shadowing settings" title="Settings">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33h.09a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51h.09a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82v.09a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <section class="talk-stage talk-stage--focus talk-stage--tri shadowing-stage">
+        <aside class="live-ai-script live-ai-script--top live-ai-script--compact shadowing-context" aria-label="Shadowing lesson context">
+          <div class="live-ai-script-head">
+            <span class="live-ai-script-tag">Shadowing</span>
+            <span class="live-ai-script-title-inline">Speak along with the model voice</span>
+          </div>
+          <h1 class="shadowing-title">Airport boarding announcement</h1>
+          <p class="shadowing-sub">Line 3 of 8 · text visible · headphones recommended</p>
+        </aside>
+
+        <div class="live-stage-columns">
+          <div class="live-caption-col" aria-live="polite">
+            <div class="live-voice-caption-block live-voice-caption-block--script shadow-line">
+              <span class="live-voice-caption-tag live-voice-caption-tag--paired">
+                <span class="live-voice-caption-tag-key">Now shadowing</span>
+                <span class="live-voice-caption-tag-value"><span class="shadow-line-count">3</span> / 8</span>
+              </span>
+              <p class="shadow-text">
+                The flight to Singapore is <span class="is-current">now boarding</span> at gate twelve.
+              </p>
+              <span class="shadow-phrase">now boarding · gate twelve</span>
+            </div>
+          </div>
+
+          <div class="talk-main talk-core">
+            <footer class="live-session-footer">
+              <div class="live-orb-stack">
+                <div class="conversation-pulse conversation-pulse--compact">
+                  <div class="live-particle-orb live-particle-orb--active" data-state="listening">
+                    <canvas class="live-particle-orb__canvas" aria-hidden="true"></canvas>
+                    <div class="shadow-countdown" aria-hidden="true">
+                      <span>2</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="voice-controls voice-controls--compact voice-controls--minimal live-voice-controls-row">
+                <button type="button" class="live-voice-round-btn live-voice-round-btn--end" title="Stop" aria-label="Stop">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M7 7l10 10M17 7L7 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  </svg>
+                </button>
+                <div class="live-voice-mic-shell live-voice-mic-shell--user-voice">
+                  <div class="live-voice-mic-shell__frame">
+                    <button type="button" class="live-voice-round-btn live-voice-round-btn--mic live-voice-round-btn--mic-hot" title="Mic active" aria-label="Mic active">
+                      <svg class="live-voice-mic-svg" width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M12 15a3 3 0 003-3V6a3 3 0 10-6 0v6a3 3 0 003 3z" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" />
+                        <path d="M19 10v1a7 7 0 01-14 0v-1M12 19v3M9 22h6" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" />
+                      </svg>
+                    </button>
+                  </div>
+                  <p class="live-voice-sr-only" role="status">Speak along active</p>
+                </div>
+              </div>
+              <div class="shadow-status" aria-hidden="true">
+                <span class="shadow-dot"></span>
+                <span>Model voice + mic</span>
+              </div>
+            </footer>
+          </div>
+
+          <aside class="live-hint-rail" aria-label="Shadowing controls">
+            <div class="live-hint-stack shadow-rail">
+              <div class="live-hint-card">
+                <span class="live-voice-caption-tag live-hint-rail-tag">Progress</span>
+                <div class="shadow-mini-progress" aria-hidden="true">
+                  <div class="shadow-progress-track"><span></span></div>
+                </div>
+              </div>
+
+              <div class="live-hint-card">
+                <p class="shadow-side-text">Stay with the voice. Match the rhythm first; exact scoring comes after the full passage.</p>
+              </div>
+
+              <div class="live-hint-card">
+                <div class="shadow-controls">
+                  <button class="shadow-control shadow-control--primary" type="button">Replay</button>
+                  <button class="shadow-control" type="button">Slow</button>
+                  <button class="shadow-control" type="button">Skip</button>
+                </div>
+              </div>
+
+              <div class="live-hint-card">
+                <span class="live-voice-caption-tag live-hint-rail-tag">Captured</span>
+                <p class="shadow-capture-mini">The flight to Singapore is now boarding at gate twelve.</p>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

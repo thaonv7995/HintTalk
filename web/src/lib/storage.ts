@@ -70,6 +70,11 @@ const defaultSettings: StoredSettings = {
   realtimeApiKey: '',
   realtimeModel: 'gpt-realtime-mini',
   realtimeVoice: 'marin',
+  ttsModel: 'edge-tts/en-GB-ThomasNeural',
+  sttModel: 'gpt-4o-mini-transcribe',
+  shadowingLength: 'standard',
+  shadowingGapMode: 'pause',
+  shadowingGapSeconds: 3,
   realtimeCooldownSeconds: 5,
   hintBaseUrl: 'https://api.openai.com/v1',
   hintApiKey: '',
@@ -81,6 +86,8 @@ const defaultSettings: StoredSettings = {
   showLiveVoiceAiCaptionVi: true,
   showLiveVoiceHintVi: true,
   liveVoiceMicHandsFree: true,
+  repairMySentence: true,
+  casualCompanionMode: false,
 };
 
 export function loadSettings(): StoredSettings {

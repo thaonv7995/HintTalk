@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState, type RefObject } from 'react';
 import type { ConversationTurn, HintLevel, LiveVoiceSpeaksFirst, MockScenario } from '../types';
-import { buildRealtimeSessionJson, exchangeRealtimeSdp } from '../lib/openaiRealtime';
+import { buildRealtimeSessionJson, buildRealtimeSessionConfig, exchangeRealtimeSdp } from '../lib/openaiRealtime';
 import { newId } from '../lib/ids';
 
 export type LiveUiStatus =
@@ -25,6 +25,7 @@ type RealtimeJsonEvent = {
     status_details?: { error?: { code?: string; message?: string } };
   };
   item?: { role?: string; content?: { transcript?: string }[] };
+  error?: { message?: string; code?: string };
 };
 
 type RealtimeOpts = {
@@ -38,6 +39,7 @@ type RealtimeOpts = {
   cooldownSeconds: number;
   /** Auto-open mic after each AI cooldown (vs tap mic each turn). */
   micHandsFree?: boolean;
+  casualCompanionMode?: boolean;
   remoteAudioRef: RefObject<HTMLAudioElement | null>;
   onAiLineComplete?: (text: string) => void;
   onUserTranscript?: (text: string) => void;
@@ -53,6 +55,7 @@ export function useRealtimeVoice({
   voice,
   cooldownSeconds,
   micHandsFree = false,
+  casualCompanionMode = false,
   remoteAudioRef,
   onAiLineComplete,
   onUserTranscript,
@@ -221,6 +224,11 @@ export function useRealtimeVoice({
         return;
       }
       const t = event.type;
+      if (t === 'error') {
+        const errMsg = event.error?.message || event.error?.code || 'Unknown server error';
+        pushLog(`SERVER ERROR: ${errMsg}`);
+        return;
+      }
       if (t === 'session.created') {
         pushLog(`Session created model=${event.session?.model ?? '?'}`);
         return;
@@ -356,6 +364,10 @@ export function useRealtimeVoice({
           } else if (speaksFirst === 'user') {
             setStatusLine('Your turn — tap mic to speak');
           } else {
+            setMuted(true);
+            stream?.getAudioTracks().forEach((tr) => {
+              tr.enabled = false;
+            });
             setStatusLine('Live');
           }
         }
@@ -376,12 +388,12 @@ export function useRealtimeVoice({
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       localStreamRef.current = stream;
       stream.getTracks().forEach((track) => {
-        track.enabled = false;
+        track.enabled = true;
         pc?.addTrack(track, stream);
       });
       setMuted(true);
       void setupMicLevelMeter(stream);
-      pushLog('Mic attached (muted)');
+      pushLog('Mic attached (active for handshake)');
     } catch (error) {
       try {
         pc?.addTransceiver('audio', { direction: 'recvonly' });
@@ -400,13 +412,36 @@ export function useRealtimeVoice({
       if (!pc) throw new Error('Could not create peer connection');
       const dc = pc.createDataChannel('oai-events');
       dcRef.current = dc;
-      dc.onopen = () => pushLog('Data channel open');
+      dc.onopen = () => {
+        pushLog('Data channel open');
+        try {
+          const config = buildRealtimeSessionConfig(scenario, level, voice, speaksFirst, casualCompanionMode);
+          dc.send(
+            JSON.stringify({
+              type: 'session.update',
+              session: config,
+            })
+          );
+          pushLog('Sent session.update to configure the Realtime session');
+        } catch (err) {
+          pushLog(`Failed to send session.update: ${err}`);
+        }
+
+        if (speaksFirst === 'ai') {
+          try {
+            dc.send(JSON.stringify({ type: 'response.create' }));
+            pushLog('Sent response.create to trigger AI greeting');
+          } catch (err) {
+            pushLog(`Failed to send response.create: ${err}`);
+          }
+        }
+      };
       dc.onmessage = (ev) => handleEvent(String(ev.data || ''));
 
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
-      const sessionJson = buildRealtimeSessionJson(scenario, level, model, voice, speaksFirst);
+      const sessionJson = buildRealtimeSessionJson(model);
       const ex = await exchangeRealtimeSdp(apiKey.trim(), offer.sdp || '', sessionJson);
 
       if (!ex.ok || !ex.answerSdp) {
@@ -424,6 +459,7 @@ export function useRealtimeVoice({
     }
   }, [
     apiKey,
+    casualCompanionMode,
     cleanupConnectionResources,
     handleEvent,
     level,

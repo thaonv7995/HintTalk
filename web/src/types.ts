@@ -81,6 +81,11 @@ export type StoredSettings = {
   realtimeApiKey: string;
   realtimeModel: string;
   realtimeVoice: string;
+  ttsModel: string;
+  sttModel: string;
+  shadowingLength: 'brief' | 'standard' | 'full';
+  shadowingGapMode: 'pause' | 'continuous';
+  shadowingGapSeconds: number;
   /** Seconds to wait after each AI reply before unmuting (rate-limit friendly). */
   realtimeCooldownSeconds: number;
   hintBaseUrl: string;
@@ -98,6 +103,28 @@ export type StoredSettings = {
   showLiveVoiceHintVi: boolean;
   /** Live voice: auto-unmute mic after each AI cooldown (vs tap mic each turn) */
   liveVoiceMicHandsFree: boolean;
+  /** Live voice: AI decides whether an intermediate/advanced learner line is worth repairing. */
+  repairMySentence: boolean;
+  /** Live voice: Casual companion mode with no-stress implicit recasting and code-switching */
+  casualCompanionMode: boolean;
+};
+
+export type RepairDecision = {
+  shouldRepair: boolean;
+  priority: 'none' | 'low' | 'medium' | 'high';
+  reason:
+    | 'good_enough'
+    | 'too_short'
+    | 'unclear_transcript'
+    | 'minor_issue'
+    | 'grammar'
+    | 'naturalness'
+    | 'politeness'
+    | 'reusable_pattern';
+  interruptionRisk: 'low' | 'medium' | 'high';
+  original: string;
+  repaired: string;
+  explanationVi: string;
 };
 
 export type SessionLaunchState = {
@@ -117,4 +144,45 @@ export type LiveVoiceSetup = {
   userRole: string;
   level: HintLevel;
   speaksFirst: LiveVoiceSpeaksFirst;
+};
+
+export type ShadowingGenre = 'announcement' | 'radio' | 'weather' | 'meeting' | 'service' | 'podcast';
+
+export type ShadowingTextMode = 'visible' | 'preview' | 'hidden';
+
+export type ShadowingPaceLabel = 'too_slow' | 'close' | 'too_fast' | 'unknown';
+export type ShadowingCaptureStatus = 'captured' | 'no_speech' | 'missing_api_key' | 'mic_unavailable' | 'transcription_failed' | 'capture_unavailable';
+
+export type ShadowingLine = {
+  id: string;
+  text: string;
+  focusPhrase?: string;
+};
+
+export type ShadowingLesson = {
+  id: string;
+  title: string;
+  level: Extract<HintLevel, 'intermediate' | 'advanced'>;
+  genre: ShadowingGenre;
+  voiceHint: string;
+  ttsVoice?: string;
+  ttsModel?: string;
+  promptInstruction?: string;
+  targetWpm: number;
+  lines: ShadowingLine[];
+};
+
+export type ShadowingLineResult = {
+  lineId: string;
+  target: string;
+  transcript: string;
+  captureStatus: ShadowingCaptureStatus;
+  captureError?: string;
+  accuracy: number;
+  paceLabel: ShadowingPaceLabel;
+  missingWords: string[];
+  extraWords: string[];
+  changedWords: string[];
+  modelDurationMs: number;
+  captureDurationMs: number;
 };

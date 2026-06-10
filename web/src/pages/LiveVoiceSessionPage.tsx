@@ -8,7 +8,8 @@ import {
   liveVoiceUiScenePreview,
 } from '../data/liveVoiceTopicPresets';
 import { REALTIME_VOICE_OPTIONS } from '../data/realtimeVoiceOptions';
-import type { ConversationTurn, HintTalkSession, LiveVoiceSetup, MockScenario, SessionLaunchState, StoredSettings } from '../types';
+import { TTS_VOICE_MODELS } from '../data/ttsVoiceModels';
+import type { ConversationTurn, HintTalkSession, LiveVoiceSetup, MockScenario, RepairDecision, SessionLaunchState, StoredSettings } from '../types';
 import { loadLiveVoiceSetup, loadSettings, saveLiveVoiceSetup, saveSettings, upsertSession } from '../lib/storage';
 import { newId } from '../lib/ids';
 import { useRealtimeVoice } from '../hooks/useRealtimeVoice';
@@ -17,6 +18,7 @@ import { liveVoiceScriptTitleLine } from '../lib/liveVoiceMeta';
 import { buildScenarioFromLiveSetup, FREE_VOICE_SCENARIO_ID } from '../lib/liveVoiceFreeScenario';
 import { translateLineToVi } from '../lib/translateLineVi';
 import { modelsListUrl } from '../lib/endpoints';
+import { evaluateRepairOpportunity, shouldShowRepairDecision } from '../lib/repairAgent';
 
 const liveFieldSx: CSSProperties = {
   width: '100%',
@@ -349,6 +351,11 @@ function settingsFormsEqual(a: StoredSettings, b: StoredSettings) {
     a.realtimeModel === b.realtimeModel &&
     a.realtimeVoice === b.realtimeVoice &&
     a.realtimeCooldownSeconds === b.realtimeCooldownSeconds &&
+    a.ttsModel === b.ttsModel &&
+    a.sttModel === b.sttModel &&
+    a.shadowingLength === b.shadowingLength &&
+    a.shadowingGapMode === b.shadowingGapMode &&
+    a.shadowingGapSeconds === b.shadowingGapSeconds &&
     a.hintBaseUrl === b.hintBaseUrl &&
     a.hintApiKey === b.hintApiKey &&
     a.hintModel === b.hintModel &&
@@ -358,7 +365,9 @@ function settingsFormsEqual(a: StoredSettings, b: StoredSettings) {
     a.showLiveVoiceConversationText === b.showLiveVoiceConversationText &&
     a.showLiveVoiceAiCaptionVi === b.showLiveVoiceAiCaptionVi &&
     a.showLiveVoiceHintVi === b.showLiveVoiceHintVi &&
-    a.liveVoiceMicHandsFree === b.liveVoiceMicHandsFree
+    a.liveVoiceMicHandsFree === b.liveVoiceMicHandsFree &&
+    a.repairMySentence === b.repairMySentence &&
+    a.casualCompanionMode === b.casualCompanionMode
   );
 }
 
@@ -401,11 +410,19 @@ function LiveVoiceInner({
   const hintAiAttemptedRef = useRef(false);
   const captionViAiGenRef = useRef(0);
   const hintViGenRef = useRef(0);
+  const repairRefreshGenRef = useRef(0);
+  const repairHistoryRef = useRef<RepairDecision[]>([]);
+  const latestAiLineRef = useRef('');
+  const hintAbortControllerRef = useRef<AbortController | null>(null);
+  const repairAbortControllerRef = useRef<AbortController | null>(null);
 
   const [hintPack, setHintPack] = useState<HintPayload | null>(null);
   const [hintLoading, setHintLoading] = useState(false);
   const [aiCaptionVi, setAiCaptionVi] = useState('');
   const [hintViText, setHintViText] = useState('');
+  const [hintErrorMessage, setHintErrorMessage] = useState('');
+  const [repairDecision, setRepairDecision] = useState<RepairDecision | null>(null);
+  const [repairPracticeActive, setRepairPracticeActive] = useState(false);
   const [liveSessionSettingsOpen, setLiveSessionSettingsOpen] = useState(false);
   const [settingsDraft, setSettingsDraft] = useState<StoredSettings | null>(null);
   const [settingsConnectionCheck, setSettingsConnectionCheck] = useState<{
@@ -482,7 +499,11 @@ function LiveVoiceInner({
     try {
       const headers: HeadersInit = {};
       if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
-      const res = await fetch(modelsListUrl(baseUrl), { headers });
+      const url = modelsListUrl(baseUrl);
+      if (url.startsWith('/api-proxy')) {
+        (headers as Record<string, string>)['X-Proxy-Target'] = baseUrl.replace(/\/+$/, '');
+      }
+      const res = await fetch(url, { headers });
       setSettingsConnectionCheck((s) => ({ ...s, hint: res.ok ? 'ok' : 'fail' }));
     } catch {
       setSettingsConnectionCheck((s) => ({ ...s, hint: 'fail' }));
@@ -555,6 +576,10 @@ function LiveVoiceInner({
     settings.hintApiKey?.trim() && settings.hintModel && settings.hintBaseUrl.trim(),
   );
 
+  const repairAvailableForLevel = launch.level === 'intermediate' || launch.level === 'advanced';
+  const repairApiConfigured = hintApiConfigured;
+  const repairEnabled = settings.repairMySentence && repairAvailableForLevel && repairApiConfigured && !settings.casualCompanionMode;
+
   const offlineHintRailLine = useMemo(() => {
     const chips = scenario.phraseBank?.filter(Boolean) ?? [];
     const chipLine = chips.length ? chips.join(' · ') : '';
@@ -569,33 +594,102 @@ function LiveVoiceInner({
 
   const refreshHintsFromConversation = useCallback(
     async (latestAiLine: string) => {
+      if (settings.casualCompanionMode) {
+        setHintLoading(false);
+        setHintPack(null);
+        setHintViText('');
+        setHintErrorMessage('');
+        return;
+      }
       if (!settings.hintApiKey || !settings.hintModel || !settings.hintBaseUrl.trim()) {
         setHintLoading(false);
         setHintPack(null);
         setHintViText('');
+        setHintErrorMessage('');
         return;
       }
       hintAiAttemptedRef.current = true;
       const gen = ++hintRefreshGenRef.current;
       setHintViText('');
+      setHintErrorMessage('');
       setHintLoading(true);
+
+      if (hintAbortControllerRef.current) {
+        hintAbortControllerRef.current.abort();
+      }
+      const controller = new AbortController();
+      hintAbortControllerRef.current = controller;
+
       try {
         const turns = getTurnsRef.current();
         const h = await generateHintPayload(settings, scenario, launch.level, turns, latestAiLine, {
           speaksFirst: setup.speaksFirst,
+          signal: controller.signal,
         });
         if (gen !== hintRefreshGenRef.current) return;
         setHintPack(h);
-      } catch {
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === 'AbortError') {
+          return;
+        }
         if (gen !== hintRefreshGenRef.current) return;
         setHintPack(null);
         setHintViText('');
+        setHintErrorMessage(err instanceof Error ? err.message : String(err));
       } finally {
         if (gen === hintRefreshGenRef.current) setHintLoading(false);
       }
     },
     [scenario, settings, launch.level, setup.speaksFirst],
   );
+
+  const maybeEvaluateRepair = useCallback(
+    async (latestUserLine: string) => {
+      const cleanUserLine = latestUserLine.trim();
+      if (!repairEnabled || !cleanUserLine) return;
+      if (cleanUserLine.split(/\s+/).filter(Boolean).length < 4) return;
+
+      const gen = ++repairRefreshGenRef.current;
+      setRepairPracticeActive(false);
+
+      if (repairAbortControllerRef.current) {
+        repairAbortControllerRef.current.abort();
+      }
+      const controller = new AbortController();
+      repairAbortControllerRef.current = controller;
+
+      try {
+        const decision = await evaluateRepairOpportunity(
+          settings,
+          scenario,
+          launch.level,
+          getTurnsRef.current(),
+          latestAiLineRef.current,
+          cleanUserLine,
+          repairHistoryRef.current,
+          controller.signal,
+        );
+        if (gen !== repairRefreshGenRef.current) return;
+        repairHistoryRef.current = [...repairHistoryRef.current.slice(-7), decision];
+        if (!shouldShowRepairDecision(decision, launch.level, cleanUserLine)) return;
+        setRepairDecision(decision);
+        setHintPack(null);
+        setHintViText('');
+        setHintLoading(false);
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === 'AbortError') return;
+        if (gen !== repairRefreshGenRef.current) return;
+      }
+    },
+    [launch.level, repairEnabled, scenario, settings],
+  );
+
+  const clearRepairAndReturnToHints = useCallback(() => {
+    setRepairDecision(null);
+    setRepairPracticeActive(false);
+    repairRefreshGenRef.current += 1;
+    void refreshHintsFromConversation(latestAiLineRef.current);
+  }, [refreshHintsFromConversation]);
 
   const translateAiCaptionVi = useCallback(
     async (en: string) => {
@@ -626,11 +720,22 @@ function LiveVoiceInner({
     voice: settings.realtimeVoice,
     cooldownSeconds: settings.realtimeCooldownSeconds,
     micHandsFree: settings.liveVoiceMicHandsFree,
+    casualCompanionMode: settings.casualCompanionMode,
     remoteAudioRef,
     onAiLineComplete: (t) => {
+      latestAiLineRef.current = t;
       void refreshHintsFromConversation(t);
       if (settings.showLiveVoiceConversationText && settings.showLiveVoiceAiCaptionVi) void translateAiCaptionVi(t);
       else setAiCaptionVi('');
+    },
+    onUserTranscript: (t) => {
+      if (repairPracticeActive) {
+        setRepairDecision(null);
+        setRepairPracticeActive(false);
+        void refreshHintsFromConversation(latestAiLineRef.current);
+        return;
+      }
+      void maybeEvaluateRepair(t);
     },
   });
 
@@ -909,8 +1014,16 @@ function LiveVoiceInner({
     if (voice.uiStatus === 'ended' || voice.uiStatus === 'idle') {
       hintedLiveOnceRef.current = false;
       hintAiAttemptedRef.current = false;
+      setRepairDecision(null);
+      setRepairPracticeActive(false);
     }
   }, [voice.uiStatus]);
+
+  useEffect(() => {
+    if (repairEnabled) return;
+    setRepairDecision(null);
+    setRepairPracticeActive(false);
+  }, [repairEnabled]);
 
   useEffect(() => {
     if (voice.uiStatus !== 'live') return;
@@ -921,7 +1034,11 @@ function LiveVoiceInner({
 
   useEffect(() => {
     document.body.classList.add('voice-page');
-    return () => document.body.classList.remove('voice-page');
+    return () => {
+      document.body.classList.remove('voice-page');
+      hintAbortControllerRef.current?.abort();
+      repairAbortControllerRef.current?.abort();
+    };
   }, []);
 
   const persistSession = useCallback(
@@ -964,12 +1081,18 @@ function LiveVoiceInner({
     setHintPack(null);
     setAiCaptionVi('');
     setHintViText('');
+    setHintErrorMessage('');
     hintedLiveOnceRef.current = false;
     hintAiAttemptedRef.current = false;
     setHintLoading(false);
+    setRepairDecision(null);
+    setRepairPracticeActive(false);
     hintRefreshGenRef.current += 1;
     captionViAiGenRef.current += 1;
     hintViGenRef.current += 1;
+    repairRefreshGenRef.current += 1;
+    repairHistoryRef.current = [];
+    latestAiLineRef.current = '';
     setLiveSessionSettingsOpen(false);
     setSettingsDraft(null);
     if (topicPickerCloseTimerRef.current) {
@@ -1007,6 +1130,13 @@ function LiveVoiceInner({
       return;
     }
     void voice.connect();
+  };
+
+  const practiceRepairLine = () => {
+    setRepairPracticeActive(true);
+    if (isLivePhase && voice.muted && !micInteractionLocked) {
+      voice.toggleMute();
+    }
   };
 
   const muteActionLabel =
@@ -1462,6 +1592,73 @@ function LiveVoiceInner({
                       ) : null}
                     </div>
                   </div>
+
+                  <div className="live-session-settings-section">
+                    <p className="live-session-settings-section-title">Shadowing setup</p>
+                    <label className="live-session-settings-field">
+                      <span className="live-session-settings-label">Passage length</span>
+                      <select
+                        style={liveFieldSx}
+                        value={settingsDraft.shadowingLength}
+                        onChange={(e) => patchSettingsDraft({ shadowingLength: e.target.value as StoredSettings['shadowingLength'] })}
+                        aria-label="Shadowing passage length"
+                      >
+                        <option value="brief">Brief</option>
+                        <option value="standard">Standard</option>
+                        <option value="full">Full announcement</option>
+                      </select>
+                    </label>
+                    <label className="live-session-settings-field">
+                      <span className="live-session-settings-label">Gap between lines</span>
+                      <select
+                        style={liveFieldSx}
+                        value={settingsDraft.shadowingGapMode === 'continuous' ? 'continuous' : String(settingsDraft.shadowingGapSeconds)}
+                        onChange={(e) => {
+                          if (e.target.value === 'continuous') {
+                            patchSettingsDraft({ shadowingGapMode: 'continuous' });
+                          } else {
+                            patchSettingsDraft({ shadowingGapMode: 'pause', shadowingGapSeconds: Number(e.target.value) });
+                          }
+                        }}
+                        aria-label="Shadowing gap between lines"
+                      >
+                        <option value="continuous">No gap</option>
+                        <option value="1">1s gap</option>
+                        <option value="2">2s gap</option>
+                        <option value="3">3s gap</option>
+                        <option value="5">5s gap</option>
+                      </select>
+                      <span className="live-session-settings-hint">No gap turns the passage into a longer continuous announcement.</span>
+                    </label>
+                    <label className="live-session-settings-field">
+                      <span className="live-session-settings-label">Fallback voice model</span>
+                      <select
+                        style={liveFieldSx}
+                        value={settingsDraft.ttsModel}
+                        onChange={(e) => patchSettingsDraft({ ttsModel: e.target.value })}
+                        aria-label="TTS model"
+                      >
+                        {TTS_VOICE_MODELS.map((voiceModel) => (
+                          <option key={voiceModel.id} value={voiceModel.id}>
+                            {voiceModel.label}
+                          </option>
+                        ))}
+                        {!TTS_VOICE_MODELS.some((voiceModel) => voiceModel.id === settingsDraft.ttsModel) ? (
+                          <option value={settingsDraft.ttsModel}>{settingsDraft.ttsModel}</option>
+                        ) : null}
+                      </select>
+                    </label>
+                    <label className="live-session-settings-field">
+                      <span className="live-session-settings-label">STT model</span>
+                      <input
+                        style={liveFieldSx}
+                        value={settingsDraft.sttModel}
+                        onChange={(e) => patchSettingsDraft({ sttModel: e.target.value })}
+                        placeholder="gpt-4o-mini-transcribe"
+                        aria-label="STT model"
+                      />
+                    </label>
+                  </div>
                 </div>
                 <div className="live-session-settings-display-section">
                   <p className="live-session-settings-section-title">Live voice — what to show</p>
@@ -1513,8 +1710,63 @@ function LiveVoiceInner({
                       </span>
                     </span>
                   </label>
+                  <label className="live-session-settings-toggle">
+                    <input
+                      type="checkbox"
+                      checked={settingsDraft.casualCompanionMode}
+                      onChange={(e) => patchSettingsDraft({ casualCompanionMode: e.target.checked })}
+                    />
+                    <span className="live-session-settings-toggle-body">
+                      <span className="live-session-settings-toggle-title">Casual companion mode (Trò chuyện tự nhiên)</span>
+                      <span className="live-session-settings-toggle-desc">
+                        No hints/repairs shown. AI recasts mistakes and supports English-Vietnamese code-switching.
+                      </span>
+                    </span>
+                  </label>
+                  <label className="live-session-settings-toggle">
+                    <input
+                      type="checkbox"
+                      checked={settingsDraft.repairMySentence}
+                      onChange={(e) => patchSettingsDraft({ repairMySentence: e.target.checked })}
+                    />
+                    <span className="live-session-settings-toggle-body">
+                      <span className="live-session-settings-toggle-title">Repair my sentence</span>
+                      <span className="live-session-settings-toggle-desc">
+                        For Intermediate and Advanced: AI decides when a spoken line is worth repairing after your turn.
+                      </span>
+                    </span>
+                  </label>
                 </div>
                 </>
+              ) : null}
+              {voice.logLines.length > 0 ? (
+                <div className="live-session-settings-section" style={{ marginTop: 16, borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: 16 }}>
+                  <p className="live-session-settings-section-title">WebRTC Connection Logs</p>
+                  <div
+                    style={{
+                      maxHeight: 120,
+                      overflowY: 'auto',
+                      background: 'rgba(0,0,0,0.3)',
+                      padding: 8,
+                      borderRadius: 8,
+                      fontFamily: 'monospace',
+                      fontSize: '0.74rem',
+                      color: 'rgba(239, 248, 243, 0.7)',
+                      textAlign: 'left',
+                      whiteSpace: 'pre-wrap',
+                    }}
+                  >
+                    {voice.logLines.join('\n')}
+                  </div>
+                  <button
+                    type="button"
+                    className="live-session-settings-btn live-session-settings-btn--ghost live-session-settings-btn--compact"
+                    style={{ alignSelf: 'flex-start', marginTop: 6 }}
+                    onClick={voice.clearLogs}
+                  >
+                    Clear logs
+                  </button>
+                </div>
               ) : null}
             </div>
             <div className="live-session-settings-footer">
@@ -1594,7 +1846,7 @@ function LiveVoiceInner({
         </aside>
 
         <div
-          className={`live-stage-columns${settings.showLiveVoiceConversationText ? '' : ' live-stage-columns--no-conversation-text'}`}
+          className={`live-stage-columns${settings.showLiveVoiceConversationText ? '' : ' live-stage-columns--no-conversation-text'}${settings.casualCompanionMode ? ' live-stage-columns--casual' : ''}`}
         >
           {settings.showLiveVoiceConversationText ? (
             <div className="live-caption-col" aria-live="polite">
@@ -1758,59 +2010,111 @@ function LiveVoiceInner({
             </footer>
           </div>
 
-          <aside className="live-hint-rail" aria-label="Hints">
-            {(() => {
-              const showAiHint = Boolean(hintPack && hintEnJoined.trim());
-              const showHintLoading = hintApiConfigured && hintLoading && !showAiHint;
-              const offlineLine = offlineHintRailLine.trim();
-              const showOfflineFallback = Boolean(offlineLine) && !hintApiConfigured;
-              const showHintUnavailable = hintApiConfigured && hintAiAttemptedRef.current && !hintLoading && !showAiHint;
-
-              if (!showAiHint && !showHintLoading && !showOfflineFallback && !showHintUnavailable) return null;
-
-              return (
-                <div className="live-hint-stack">
-                  {showAiHint ? (
-                    <div className="live-hint-card">
-                      <span className="live-voice-caption-tag live-hint-rail-tag">Hint</span>
-                      <p className="live-hint-card-p live-hint-card-p--primary" lang="en" style={{ whiteSpace: 'pre-wrap' }}>
-                        {hintEnJoined}
-                      </p>
-                      {settings.showLiveVoiceHintVi && hintViText ? (
-                        <p className="live-hint-card-vi" lang="vi">
-                          {hintViText}
+          {!settings.casualCompanionMode ? (
+            <aside className="live-hint-rail" aria-label="Hints">
+              {(() => {
+                if (repairDecision?.shouldRepair) {
+                  return (
+                    <div className="live-hint-stack">
+                      <div className="live-hint-card live-repair-card">
+                        <span className="live-voice-caption-tag live-hint-rail-tag">
+                          {repairPracticeActive ? 'Practice repair' : 'Repair'}
+                        </span>
+                        {repairDecision.original ? (
+                          <p className="live-repair-original" lang="en">
+                            {repairDecision.original}
+                          </p>
+                        ) : null}
+                        <p className="live-repair-better" lang="en">
+                          {repairDecision.repaired}
                         </p>
-                      ) : null}
+                        {repairDecision.explanationVi ? (
+                          <p className="live-repair-note" lang="vi">
+                            {repairDecision.explanationVi}
+                          </p>
+                        ) : null}
+                        <div className="live-repair-actions">
+                          <button
+                            type="button"
+                            className="live-repair-action live-repair-action--primary"
+                            onClick={practiceRepairLine}
+                          >
+                            Practice this
+                          </button>
+                          <button type="button" className="live-repair-action" onClick={clearRepairAndReturnToHints}>
+                            Continue
+                          </button>
+                          <button type="button" className="live-repair-action" onClick={clearRepairAndReturnToHints}>
+                            Skip
+                          </button>
+                        </div>
+                        {repairPracticeActive ? (
+                          <p className="live-repair-repeat" role="status">
+                            Say the repaired sentence once, then the conversation continues.
+                          </p>
+                        ) : null}
+                      </div>
                     </div>
-                  ) : null}
-                  {showHintLoading ? (
-                    <div className="live-hint-card">
-                      <span className="live-voice-caption-tag live-hint-rail-tag">Hint</span>
-                      <p className="live-hint-card-p live-hint-card-p--primary" role="status" aria-live="polite">
-                        Loading AI suggestion…
-                      </p>
-                    </div>
-                  ) : null}
-                  {showOfflineFallback ? (
-                    <div className="live-hint-card">
-                      <span className="live-voice-caption-tag live-hint-rail-tag">Phrases</span>
-                      <p className="live-hint-card-p live-hint-card-p--primary" lang="en">
-                        {offlineLine}
-                      </p>
-                    </div>
-                  ) : null}
-                  {showHintUnavailable ? (
-                    <div className="live-hint-card">
-                      <span className="live-voice-caption-tag live-hint-rail-tag">Hint unavailable</span>
-                      <p className="live-hint-card-p live-hint-card-p--primary" role="status" aria-live="polite">
-                        Check the Hint API key or model in settings.
-                      </p>
-                    </div>
-                  ) : null}
-                </div>
-              );
-            })()}
-          </aside>
+                  );
+                }
+
+                const showAiHint = Boolean(hintPack && hintEnJoined.trim());
+                const showHintLoading = hintApiConfigured && hintLoading && !showAiHint;
+                const offlineLine = offlineHintRailLine.trim();
+                const showOfflineFallback = Boolean(offlineLine) && !hintApiConfigured;
+                const showHintUnavailable = hintApiConfigured && hintAiAttemptedRef.current && !hintLoading && !showAiHint;
+
+                if (!showAiHint && !showHintLoading && !showOfflineFallback && !showHintUnavailable) return null;
+
+                return (
+                  <div className="live-hint-stack">
+                    {showAiHint ? (
+                      <div className="live-hint-card">
+                        <span className="live-voice-caption-tag live-hint-rail-tag">Hint</span>
+                        <p className="live-hint-card-p live-hint-card-p--primary" lang="en" style={{ whiteSpace: 'pre-wrap' }}>
+                          {hintEnJoined}
+                        </p>
+                        {settings.showLiveVoiceHintVi && hintViText ? (
+                          <p className="live-hint-card-vi" lang="vi">
+                            {hintViText}
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : null}
+                    {showHintLoading ? (
+                      <div className="live-hint-card">
+                        <span className="live-voice-caption-tag live-hint-rail-tag">Hint</span>
+                        <p className="live-hint-card-p live-hint-card-p--primary" role="status" aria-live="polite">
+                          Loading AI suggestion…
+                        </p>
+                      </div>
+                    ) : null}
+                    {showOfflineFallback ? (
+                      <div className="live-hint-card">
+                        <span className="live-voice-caption-tag live-hint-rail-tag">Phrases</span>
+                        <p className="live-hint-card-p live-hint-card-p--primary" lang="en">
+                          {offlineLine}
+                        </p>
+                      </div>
+                    ) : null}
+                    {showHintUnavailable ? (
+                      <div className="live-hint-card">
+                        <span className="live-voice-caption-tag live-hint-rail-tag">Hint unavailable</span>
+                        <p className="live-hint-card-p live-hint-card-p--primary" role="status" aria-live="polite">
+                          Check the Hint API key or model in settings.
+                        </p>
+                        {hintErrorMessage && (
+                          <p style={{ marginTop: 8, fontSize: '0.82em', color: '#ff6b6b', opacity: 0.95, lineHeight: 1.4 }}>
+                            {hintErrorMessage}
+                          </p>
+                        )}
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })()}
+            </aside>
+          ) : null}
         </div>
       </section>
 

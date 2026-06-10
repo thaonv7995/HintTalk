@@ -1,22 +1,22 @@
 import type { HintLevel, LiveVoiceSpeaksFirst, MockScenario } from '../types';
 import { openAiRealtimeCallsUrl } from './endpoints';
 
-/** Server VAD: longer silence before “end of turn” so the model does not reply mid‑pause while the learner is still speaking. */
-const REALTIME_SERVER_VAD = {
-  type: 'server_vad' as const,
-  prefix_padding_ms: 400,
-  /** API default is 500ms — too aggressive for natural pauses between clauses. */
-  silence_duration_ms: 1200,
-  threshold: 0.5,
-};
 
-export function buildRealtimeSessionJson(
+
+export function buildRealtimeSessionJson(model: string): string {
+  return JSON.stringify({
+    type: 'realtime',
+    model,
+  });
+}
+
+export function buildRealtimeSessionConfig(
   scenario: MockScenario,
   level: HintLevel,
-  model: string,
   voice: string,
   speaksFirst: LiveVoiceSpeaksFirst = 'ai',
-): string {
+  casualCompanionMode: boolean = false,
+) {
   const openingRules =
     speaksFirst === 'user'
       ? [
@@ -31,9 +31,28 @@ export function buildRealtimeSessionJson(
           'Draw them into the scene without sounding like an exam question.',
         ];
 
-  return JSON.stringify({
+  const casualRules = casualCompanionMode
+    ? [
+        '',
+        'CRITICAL RULE — IMPLICIT RECASTING (No Explicit Corrections):',
+        '- If the learner makes grammatical or vocabulary errors, do NOT point them out, correct them explicitly, or lecture them.',
+        '- Instead, naturally reformulate the incorrect phrase in your next reply (e.g., if they say "Yesterday I go to...", reply with "Oh, you went to...?").',
+        '- Help them acquire correct structures implicitly through your own natural replies.',
+        '',
+        'CRITICAL RULE — VIETNAMESE CODE-SWITCHING:',
+        '- The learner may mix English and Vietnamese when they forget a word (e.g., "It is very kịch tính").',
+        '- You must understand the Vietnamese words, translate them, and naturally include the correct English terms in your next response (e.g., "Yes, it is indeed very dramatic!").',
+        '- Never comment on their mixed-language speech; just keep the conversation going smoothly.',
+        '',
+        'TONE & FLOW:',
+        '- Maintain a very warm, friendly, casual, and completely non-evaluative tone.',
+        '- Avoid sounding like an examiner or a strict teacher. Make them feel safe and comfortable.',
+      ]
+    : [];
+
+  return {
     type: 'realtime',
-    model,
+    modalities: ['text', 'audio'],
     instructions: [
       'You are HintTalk live roleplay partner.',
       'Speak English only.',
@@ -59,21 +78,22 @@ export function buildRealtimeSessionJson(
       '',
       'The learner may choose any topic or imaginary situation.',
       'Stay in your assigned role; if they switch topic or ask for a new role-play, adapt naturally.',
+      ...casualRules,
       ...openingRules,
     ]
       .filter(Boolean)
       .join('\n'),
-    audio: {
-      input: {
-        transcription: {
-          model: 'gpt-4o-mini-transcribe',
-          language: 'en',
-        },
-        turn_detection: REALTIME_SERVER_VAD,
-      },
-      output: { voice },
+    voice,
+    turn_detection: {
+      type: 'server_vad',
+      threshold: 0.5,
+      prefix_padding_ms: 400,
+      silence_duration_ms: 1200,
     },
-  });
+    input_audio_transcription: {
+      model: 'whisper-1',
+    },
+  };
 }
 
 export async function exchangeRealtimeSdp(

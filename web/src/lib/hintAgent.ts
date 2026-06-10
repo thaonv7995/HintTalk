@@ -57,11 +57,19 @@ function parseJsonPayload(value: string): unknown {
   const trimmed = value.trim().replace(/^```(?:json)?|```$/g, '').trim();
   try {
     return JSON.parse(trimmed);
-  } catch {
+  } catch (err: unknown) {
+    const errMsg = err instanceof Error ? err.message : String(err);
     const start = trimmed.indexOf('{');
     const end = trimmed.lastIndexOf('}');
-    if (start >= 0 && end > start) return JSON.parse(trimmed.slice(start, end + 1));
-    throw new Error('Response was not JSON');
+    if (start >= 0 && end > start) {
+      try {
+        return JSON.parse(trimmed.slice(start, end + 1));
+      } catch (err2: unknown) {
+        const err2Msg = err2 instanceof Error ? err2.message : String(err2);
+        throw new Error(`Invalid JSON: ${err2Msg}. Output was: "${trimmed.slice(0, 300)}"`, { cause: err2 });
+      }
+    }
+    throw new Error(`Response is not JSON: ${errMsg}. Output was: "${trimmed.slice(0, 300)}"`, { cause: err });
   }
 }
 
@@ -148,6 +156,7 @@ export function hintsBlockAtLevel(h: HintPayload, level: HintLevel): string {
 
 export type GenerateHintOptions = {
   speaksFirst?: LiveVoiceSpeaksFirst;
+  signal?: AbortSignal;
 };
 
 export async function generateHintPayload(
@@ -210,7 +219,11 @@ export async function generateHintPayload(
     },
   ];
 
-  const text = await fetchChatCompletion(settings, messages, 0.28, { max_tokens: 900 });
+  const text = await fetchChatCompletion(settings, messages, 0.28, {
+    max_tokens: 900,
+    jsonMode: true,
+    signal: options?.signal,
+  });
   const parsed = parseJsonPayload(text);
   const normalized = normalizeHintPayload(parsed);
   return capPayloadToSingleHint(normalized, level);

@@ -20,6 +20,8 @@ const OPENAI_PROXY_ALLOWED = new Map([
   ['/v1/chat/completions', new Set(['POST'])],
   ['/v1/models', new Set(['GET'])],
   ['/v1/realtime/calls', new Set(['POST'])],
+  ['/v1/audio/transcriptions', new Set(['POST'])],
+  ['/v1/audio/speech', new Set(['POST'])],
 ]);
 
 const MIME = {
@@ -118,9 +120,157 @@ function proxyOpenAI(req, res) {
   });
 }
 
+function proxyTTS(req, res) {
+  if (req.method !== 'POST') {
+    res.writeHead(405, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Method not allowed');
+    req.resume();
+    return;
+  }
+
+  let targetBase;
+  try {
+    targetBase = new URL(String(req.headers['x-tts-base-url'] || '').replace(/\/+$/, ''));
+  } catch {
+    res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Missing or invalid TTS base URL');
+    req.resume();
+    return;
+  }
+  if (targetBase.protocol !== 'https:') {
+    res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' }).end('TTS base URL must use https');
+    req.resume();
+    return;
+  }
+
+  const chunks = [];
+  let size = 0;
+  req.on('data', (c) => {
+    size += c.length;
+    if (size > OPENAI_PROXY_MAX_BODY_BYTES) {
+      res.writeHead(413, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Request body too large');
+      req.destroy();
+      return;
+    }
+    chunks.push(c);
+  });
+  req.on('end', () => {
+    if (res.headersSent) return;
+    const body = Buffer.concat(chunks);
+    const cleanPath = targetBase.pathname.replace(/\/+$/, '');
+    const targetPathname = cleanPath.endsWith('/audio/speech') ? cleanPath : `${cleanPath}/audio/speech`;
+    const target = new URL(targetPathname, targetBase);
+    const headers = {
+      Authorization: String(req.headers.authorization || ''),
+      'Content-Type': String(req.headers['content-type'] || 'application/json'),
+      'Content-Length': body.length,
+    };
+    const opt = {
+      hostname: target.hostname,
+      port: 443,
+      path: `${target.pathname}${target.search}`,
+      method: 'POST',
+      headers,
+    };
+    const preq = https.request(opt, (pres) => {
+      res.writeHead(pres.statusCode || 502, pres.headers);
+      pres.pipe(res);
+    });
+    preq.setTimeout(OPENAI_PROXY_TIMEOUT_MS, () => {
+      preq.destroy(new Error('TTS proxy timeout'));
+    });
+    preq.on('error', (e) => {
+      if (res.headersSent) return;
+      res.writeHead(502).end(String(e.message));
+    });
+    if (body.length) preq.write(body);
+    preq.end();
+  });
+}
+
+function proxyGeneric(req, res) {
+  const targetHeader = req.headers['x-proxy-target'];
+  let targetBase;
+  try {
+    targetBase = new URL(String(targetHeader || '').replace(/\/+$/, ''));
+  } catch {
+    res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Missing or invalid X-Proxy-Target header');
+    req.resume();
+    return;
+  }
+
+  if (targetBase.protocol !== 'https:' && targetBase.protocol !== 'http:') {
+    res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' }).end('X-Proxy-Target protocol must be http or https');
+    req.resume();
+    return;
+  }
+
+  const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+  const targetPathname = parsedUrl.pathname.replace(/^\/api-proxy/, '') || '/';
+  const targetPath = `${targetBase.pathname.replace(/\/+$/, '')}${targetPathname}${parsedUrl.search}`;
+
+  const chunks = [];
+  let size = 0;
+  req.on('data', (c) => {
+    size += c.length;
+    if (size > OPENAI_PROXY_MAX_BODY_BYTES) {
+      res.writeHead(413, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Request body too large');
+      req.destroy();
+      return;
+    }
+    chunks.push(c);
+  });
+
+  req.on('end', () => {
+    if (res.headersSent) return;
+    const body = Buffer.concat(chunks);
+
+    const headers = { ...req.headers };
+    delete headers['x-proxy-target'];
+    delete headers['host'];
+    delete headers['connection'];
+    delete headers['keep-alive'];
+
+    const targetUrl = new URL(targetPath, targetBase);
+    console.log(`[Prod Proxy Req] ${req.method} ${req.url} -> ${targetUrl.href}`);
+    const clientModule = targetUrl.protocol === 'https:' ? https : http;
+    const opt = {
+      hostname: targetUrl.hostname,
+      port: targetUrl.port || (targetUrl.protocol === 'https:' ? 443 : 80),
+      path: `${targetUrl.pathname}${targetUrl.search}`,
+      method: req.method,
+      headers,
+    };
+
+    const preq = clientModule.request(opt, (pres) => {
+      console.log(`[Prod Proxy Res] ${req.method} ${req.url} -> Status: ${pres.statusCode}`);
+      res.writeHead(pres.statusCode || 502, pres.headers);
+      pres.pipe(res);
+    });
+
+    preq.setTimeout(OPENAI_PROXY_TIMEOUT_MS, () => {
+      preq.destroy(new Error('Generic proxy timeout'));
+    });
+
+    preq.on('error', (e) => {
+      if (res.headersSent) return;
+      res.writeHead(502).end(String(e.message));
+    });
+
+    if (body.length) preq.write(body);
+    preq.end();
+  });
+}
+
 const server = http.createServer((req, res) => {
   if (req.url.startsWith('/openai')) {
     proxyOpenAI(req, res);
+    return;
+  }
+  if (req.url.startsWith('/tts/audio/speech')) {
+    proxyTTS(req, res);
+    return;
+  }
+  if (req.url.startsWith('/api-proxy')) {
+    proxyGeneric(req, res);
     return;
   }
   sendStatic(req, res);

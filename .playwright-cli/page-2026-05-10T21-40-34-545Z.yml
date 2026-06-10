@@ -1,0 +1,60 @@
+- main [ref=e3]:
+  - generic [ref=e4]:
+    - link "Back to Live Voice" [ref=e5] [cursor=pointer]:
+      - /url: /live-voice
+      - text: HintTalk
+    - generic [ref=e6]:
+      - generic "Speaking mode" [ref=e7]:
+        - link "Role-play" [ref=e8] [cursor=pointer]:
+          - /url: /live-voice
+        - generic [ref=e9]: Shadowing
+      - combobox "Choose shadowing lesson" [ref=e11] [cursor=pointer]:
+        - option "Airport boarding announcement" [selected]
+        - option "Train platform change"
+        - option "Morning weather update"
+        - option "Radio news brief"
+        - option "Meeting update"
+      - combobox "Playback speed" [ref=e13] [cursor=pointer]:
+        - option "0.8x"
+        - option "0.9x"
+        - option "1.0x" [selected]
+        - option "1.1x"
+      - combobox "Text mode" [ref=e15] [cursor=pointer]:
+        - option "Text visible" [selected]
+        - option "Preview"
+        - option "Hidden"
+    - generic [ref=e16]:
+      - button "Replay line" [ref=e17] [cursor=pointer]: ↻
+      - button "Stop line" [ref=e18] [cursor=pointer]: ×
+  - generic [ref=e19]:
+    - complementary "Shadowing lesson context" [ref=e20]:
+      - generic [ref=e21]:
+        - generic [ref=e22]: Shadowing
+        - generic [ref=e23]: Speak along with the model voice
+      - heading "Airport boarding announcement" [level=1] [ref=e24]
+      - paragraph [ref=e25]: Line 1 of 5 · text visible · headphones recommended
+    - generic [ref=e26]:
+      - generic [ref=e28]:
+        - generic [ref=e29]:
+          - generic [ref=e30]: Now shadowing
+          - generic [ref=e31]: 1 / 5
+        - paragraph [ref=e32]: Good evening, passengers.
+        - generic [ref=e33]: Good evening
+      - generic [ref=e35]:
+        - generic [ref=e39]:
+          - button "Stop" [ref=e40] [cursor=pointer]: ×
+          - generic [ref=e41]:
+            - button "Start shadowing line" [ref=e43] [cursor=pointer]:
+              - img [ref=e44]
+            - status [ref=e47]: Ready to shadow
+        - generic [ref=e50]: Ready
+      - complementary "Shadowing controls" [ref=e51]:
+        - generic [ref=e52]:
+          - generic [ref=e54]: Progress
+          - generic [ref=e59]:
+            - button "Start" [ref=e60] [cursor=pointer]
+            - button "Slow" [ref=e61] [cursor=pointer]
+            - button "Skip" [ref=e62] [cursor=pointer]
+          - generic [ref=e63]:
+            - generic [ref=e64]: Captured
+            - paragraph [ref=e65]: Transcript appears after the line.

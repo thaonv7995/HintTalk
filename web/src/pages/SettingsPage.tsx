@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { loadSettings, saveSettings } from '../lib/storage';
 import type { StoredSettings } from '../types';
 import { modelsListUrl } from '../lib/endpoints';
+import { TTS_VOICE_MODELS } from '../data/ttsVoiceModels';
 
 function formatSyncedAt(ts: number): string {
   try {
@@ -77,6 +78,9 @@ export function SettingsPage() {
       const url = modelsListUrl(settings.hintBaseUrl);
       const headers: HeadersInit = {};
       if (settings.hintApiKey) headers.Authorization = `Bearer ${settings.hintApiKey}`;
+      if (url.startsWith('/api-proxy')) {
+        (headers as Record<string, string>)['X-Proxy-Target'] = settings.hintBaseUrl.trim().replace(/\/+$/, '');
+      }
       const res = await fetch(url, { headers });
       setHintCheck(res.ok ? 'ok' : 'fail');
     } catch {
@@ -165,6 +169,51 @@ export function SettingsPage() {
         </article>
 
         <article className="settings-box">
+          <p className="eyebrow">Shadowing</p>
+          <h3>Lesson setup</h3>
+          <p className="settings-help">Configure shadowing voice narration and transcription models.</p>
+          <label className="settings-field">
+            <span className="settings-label">Passage length</span>
+            <select value={settings.shadowingLength} onChange={(e) => updateField({ shadowingLength: e.target.value as StoredSettings['shadowingLength'] })}>
+              <option value="brief">Brief</option>
+              <option value="standard">Standard</option>
+              <option value="full">Full announcement</option>
+            </select>
+          </label>
+          <label className="settings-field">
+            <span className="settings-label">Gap between lines</span>
+            <select
+              value={settings.shadowingGapMode === 'continuous' ? 'continuous' : String(settings.shadowingGapSeconds)}
+              onChange={(e) => {
+                if (e.target.value === 'continuous') updateField({ shadowingGapMode: 'continuous' });
+                else updateField({ shadowingGapMode: 'pause', shadowingGapSeconds: Number(e.target.value) });
+              }}
+            >
+              <option value="continuous">No gap</option>
+              <option value="1">1s gap</option>
+              <option value="2">2s gap</option>
+              <option value="3">3s gap</option>
+              <option value="5">5s gap</option>
+            </select>
+          </label>
+          <label className="settings-field">
+            <span className="settings-label">Fallback voice model</span>
+            <select value={settings.ttsModel} onChange={(e) => updateField({ ttsModel: e.target.value })}>
+              {TTS_VOICE_MODELS.map((voice) => (
+                <option key={voice.id} value={voice.id}>
+                  {voice.label}
+                </option>
+              ))}
+              {!TTS_VOICE_MODELS.some((voice) => voice.id === settings.ttsModel) ? <option value={settings.ttsModel}>{settings.ttsModel}</option> : null}
+            </select>
+          </label>
+          <label className="settings-field">
+            <span className="settings-label">STT Model</span>
+            <input value={settings.sttModel} onChange={(e) => updateField({ sttModel: e.target.value })} placeholder="gpt-4o-mini-transcribe" />
+          </label>
+        </article>
+
+        <article className="settings-box">
           <p className="eyebrow">Hint model</p>
           <h3>Chat &amp; hints</h3>
           <p className="settings-help">OpenAI-compatible Chat Completions. For OpenAI URLs, requests go through the same <code>/openai</code> proxy.</p>
@@ -224,6 +273,38 @@ export function SettingsPage() {
                   <span className="settings-pref-title">Show live conversation text</span>
                   <span className="settings-pref-desc">
                     Realtime AI subtitle lines beside the orb (not the scenario “AI script” panel above).
+                  </span>
+                </span>
+              </label>
+            </li>
+            <li>
+              <label className="settings-pref-row">
+                <input
+                  type="checkbox"
+                  className="settings-pref-input"
+                  checked={settings.casualCompanionMode}
+                  onChange={(e) => updateField({ casualCompanionMode: e.target.checked })}
+                />
+                <span className="settings-pref-body">
+                  <span className="settings-pref-title">Casual companion mode (Trò chuyện tự nhiên)</span>
+                  <span className="settings-pref-desc">
+                    In Live Voice, hide all hints & corrections. AI will naturally recast mistakes and support code-switching (mixed English-Vietnamese).
+                  </span>
+                </span>
+              </label>
+            </li>
+            <li>
+              <label className="settings-pref-row">
+                <input
+                  type="checkbox"
+                  className="settings-pref-input"
+                  checked={settings.repairMySentence}
+                  onChange={(e) => updateField({ repairMySentence: e.target.checked })}
+                />
+                <span className="settings-pref-body">
+                  <span className="settings-pref-title">Repair my sentence</span>
+                  <span className="settings-pref-desc">
+                    In Live Voice, let AI decide when intermediate/advanced spoken lines are worth repairing.
                   </span>
                 </span>
               </label>
