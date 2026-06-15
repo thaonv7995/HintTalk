@@ -550,7 +550,7 @@
 				D8FA142C104A9B776C03A9A0 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		497281757907DEB862C4DB5E /* Build configuration list for PBXProject "HintTalk" */ = {
 			isa = XCConfigurationList;
@@ -559,7 +559,7 @@
 				A81D181690E46B07D0566939 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
 	};
