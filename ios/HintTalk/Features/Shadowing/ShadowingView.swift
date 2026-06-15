@@ -2,6 +2,7 @@ import AVFoundation
 import SwiftUI
 
 struct ShadowingView: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var model = ShadowingViewModel()
     @State private var settings = SettingsStore.shared
 
@@ -38,108 +39,167 @@ struct ShadowingView: View {
                 }
                 .padding(.top, 12)
 
-                ForEach(model.lessons) { lesson in
-                    Button {
-                        model.select(lesson)
-                    } label: {
-                        VStack(alignment: .leading, spacing: 6) {
-                            HStack {
-                                Text(lesson.title)
-                                    .font(.headline)
-                                    .foregroundStyle(HT.textLight)
-                                Spacer()
-                                Text(lesson.level.capitalized)
-                                    .font(.caption2.weight(.bold))
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 3)
-                                    .background(Capsule().fill(HT.teal.opacity(0.18)))
-                                    .foregroundStyle(HT.teal)
-                            }
-                            Text("\(lesson.lines.count) lines · \(lesson.genre) · ~\(lesson.targetWpm) wpm")
-                                .font(.caption)
-                                .foregroundStyle(HT.textDim)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .htCard()
+                let columns = HTLayout.isRegularWidth(horizontalSizeClass)
+                    ? [GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16)]
+                    : [GridItem(.flexible())]
+
+                LazyVGrid(columns: columns, spacing: 16) {
+                    ForEach(model.lessons) { lesson in
+                        lessonCard(lesson)
                     }
-                    .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 18)
+            .htReadableWidth(HTLayout.listMaxWidth)
+            .htPagePadding()
             .padding(.bottom, 24)
         }
+    }
+
+    private func lessonCard(_ lesson: ShadowingLesson) -> some View {
+        Button {
+            model.select(lesson)
+        } label: {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text(lesson.title)
+                        .font(.headline)
+                        .foregroundStyle(HT.textLight)
+                    Spacer()
+                    Text(lesson.level.capitalized)
+                        .font(.caption2.weight(.bold))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(Capsule().fill(HT.teal.opacity(0.18)))
+                        .foregroundStyle(HT.teal)
+                }
+                Text("\(lesson.lines.count) lines · \(lesson.genre) · ~\(lesson.targetWpm) wpm")
+                    .font(.caption)
+                    .foregroundStyle(HT.textDim)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .htCard()
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: Run screen
 
     private var runView: some View {
+        Group {
+            if HTLayout.isRegularWidth(horizontalSizeClass) {
+                regularRunView
+            } else {
+                compactRunView
+            }
+        }
+    }
+
+    private var compactRunView: some View {
         VStack(spacing: 18) {
-            HStack {
-                Button {
-                    model.backToLessons()
-                } label: {
-                    Image(systemName: "chevron.left")
-                        .font(.subheadline.weight(.bold))
-                        .foregroundStyle(HT.textLight)
-                        .padding(10)
-                        .background(Circle().fill(Color.white.opacity(0.08)))
-                }
-                Spacer()
-                if let lesson = model.lesson {
-                    Text(lesson.title)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(HT.textLight)
-                }
-                Spacer()
-                Color.clear.frame(width: 38, height: 38)
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 8)
-
-            if let lesson = model.lesson {
-                ProgressView(value: Double(min(model.lineIndex, lesson.lines.count)), total: Double(lesson.lines.count))
-                    .tint(HT.gold)
-                    .padding(.horizontal, 20)
-                HStack(spacing: 12) {
-                    Text("Line \(min(model.lineIndex + 1, lesson.lines.count)) of \(lesson.lines.count)")
-                        .font(.caption)
-                        .foregroundStyle(HT.textDim)
-                    speedPicker
-                }
-            }
-
+            runHeader
+            runProgress
             Spacer()
-
-            if let line = model.currentLine {
-                Text(line.text)
-                    .font(.system(.title3, design: .serif))
-                    .foregroundStyle(HT.textLight)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 28)
-                if let focus = line.focusPhrase {
-                    Text("Focus: \(focus)")
-                        .font(.caption)
-                        .foregroundStyle(HT.gold)
-                }
-            }
-
+            runLineContent
             OrbView(level: model.phase == .recording ? 0.5 : 0.2, aiSpeaking: model.phase == .playingModel)
                 .frame(height: 170)
-
             statusBadge
-
             Spacer()
-
             controls
                 .padding(.bottom, 20)
+            runError
+        }
+    }
 
-            if let error = model.errorMessage {
-                Text(error)
-                    .font(.caption)
-                    .foregroundStyle(HT.orange)
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 8)
+    private var regularRunView: some View {
+        VStack(spacing: 0) {
+            runHeader
+            runProgress
+                .padding(.bottom, 12)
+
+            HStack(alignment: .center, spacing: 32) {
+                VStack(spacing: 20) {
+                    runLineContent
+                        .frame(maxWidth: .infinity)
+                    statusBadge
+                    controls
+                }
+                .frame(maxWidth: .infinity)
+
+                OrbView(level: model.phase == .recording ? 0.5 : 0.2, aiSpeaking: model.phase == .playingModel)
+                    .frame(width: 280, height: 280)
             }
+            .htReadableWidth(HTLayout.sessionMaxWidth)
+            .htPagePadding()
+            .padding(.vertical, 24)
+
+            Spacer(minLength: 0)
+            runError
+        }
+    }
+
+    private var runHeader: some View {
+        HStack {
+            Button {
+                model.backToLessons()
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(HT.textLight)
+                    .padding(10)
+                    .background(Circle().fill(Color.white.opacity(0.08)))
+            }
+            Spacer()
+            if let lesson = model.lesson {
+                Text(lesson.title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(HT.textLight)
+            }
+            Spacer()
+            Color.clear.frame(width: 38, height: 38)
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+    }
+
+    @ViewBuilder
+    private var runProgress: some View {
+        if let lesson = model.lesson {
+            ProgressView(value: Double(min(model.lineIndex, lesson.lines.count)), total: Double(lesson.lines.count))
+                .tint(HT.gold)
+                .padding(.horizontal, 20)
+            HStack(spacing: 12) {
+                Text("Line \(min(model.lineIndex + 1, lesson.lines.count)) of \(lesson.lines.count)")
+                    .font(.caption)
+                    .foregroundStyle(HT.textDim)
+                speedPicker
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var runLineContent: some View {
+        if let line = model.currentLine {
+            Text(line.text)
+                .font(.system(HTLayout.isRegularWidth(horizontalSizeClass) ? .title2 : .title3, design: .serif))
+                .foregroundStyle(HT.textLight)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 28)
+            if let focus = line.focusPhrase {
+                Text("Focus: \(focus)")
+                    .font(.caption)
+                    .foregroundStyle(HT.gold)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var runError: some View {
+        if let error = model.errorMessage {
+            Text(error)
+                .font(.caption)
+                .foregroundStyle(HT.orange)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 8)
         }
     }
 
@@ -377,7 +437,8 @@ struct ShadowingResultsView: View {
                 }
                 .padding(.top, 6)
             }
-            .padding(.horizontal, 18)
+            .htReadableWidth(HTLayout.listMaxWidth)
+            .htPagePadding()
             .padding(.bottom, 24)
         }
         .onDisappear { player.releaseAudioSession() }

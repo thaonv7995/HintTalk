@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct TopicPickerView: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     var selectedId: String
     var onPick: (TopicPreset) -> Void
 
@@ -69,6 +70,8 @@ struct TopicPickerView: View {
             .searchable(text: $search, prompt: "Search topics")
             .navigationTitle("Choose a topic")
             .navigationBarTitleDisplayMode(.inline)
+            .frame(maxWidth: HTLayout.isRegularWidth(horizontalSizeClass) ? 640 : .infinity)
+            .frame(maxWidth: .infinity)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Close") { dismiss() }

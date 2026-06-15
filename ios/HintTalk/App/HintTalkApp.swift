@@ -12,6 +12,7 @@ struct HintTalkApp: App {
 }
 
 struct RootView: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var liveVoiceModel = LiveVoiceViewModel()
     // Launch-time tab override for UI checks (e.g. simctl launch with HT_TAB=2).
     @State private var selectedTab = Int(ProcessInfo.processInfo.environment["HT_TAB"] ?? "") ?? 0
@@ -37,11 +38,25 @@ struct RootView: View {
                 .tabItem { Label("Settings", systemImage: "gearshape") }
                 .tag(3)
         }
+        .modifier(RootTabViewStyle(isRegularWidth: HTLayout.isRegularWidth(horizontalSizeClass)))
         .fullScreenCover(isPresented: $showOnboarding) {
             OnboardingView {
                 UserDefaults.standard.set(true, forKey: "onboardingDone")
                 showOnboarding = false
             }
+        }
+    }
+}
+
+/// Sidebar tabs on iPad (iOS 18+); bottom tabs elsewhere.
+private struct RootTabViewStyle: ViewModifier {
+    var isRegularWidth: Bool
+
+    func body(content: Content) -> some View {
+        if #available(iOS 18.0, *), isRegularWidth {
+            content.tabViewStyle(.sidebarAdaptable)
+        } else {
+            content
         }
     }
 }

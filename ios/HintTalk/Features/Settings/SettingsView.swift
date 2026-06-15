@@ -116,6 +116,7 @@ struct SettingsView: View {
             .scrollContentBackground(.hidden)
             .background(HT.pageGradient.ignoresSafeArea())
             .navigationTitle("Settings")
+            .htReadableWidth(HTLayout.settingsMaxWidth)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     saveButton

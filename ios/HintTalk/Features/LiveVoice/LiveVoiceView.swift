@@ -2,6 +2,7 @@ import SwiftUI
 
 /// Setup screen: pick topic, roles, level, opening order → start a live session.
 struct LiveVoiceView: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Bindable var model: LiveVoiceViewModel
     @State private var showTopicPicker = false
     @State private var showSession = false
@@ -16,33 +17,56 @@ struct LiveVoiceView: View {
                     VStack(alignment: .leading, spacing: 18) {
                         header
 
-                        topicCard
+                        if HTLayout.isRegularWidth(horizontalSizeClass) {
+                            HStack(alignment: .top, spacing: 16) {
+                                VStack(alignment: .leading, spacing: 18) {
+                                    topicCard
+                                    rolesCard
+                                }
+                                .frame(maxWidth: .infinity)
 
-                        rolesCard
+                                VStack(alignment: .leading, spacing: 18) {
+                                    levelCard
+                                    if let error = model.errorMessage {
+                                        Text(error)
+                                            .font(.footnote)
+                                            .foregroundStyle(HT.orange)
+                                            .htCard()
+                                    }
+                                    startButton
+                                }
+                                .frame(maxWidth: .infinity)
+                            }
+                        } else {
+                            topicCard
+                            rolesCard
+                            levelCard
 
-                        levelCard
+                            if let error = model.errorMessage {
+                                Text(error)
+                                    .font(.footnote)
+                                    .foregroundStyle(HT.orange)
+                                    .htCard()
+                            }
 
-                        if let error = model.errorMessage {
-                            Text(error)
-                                .font(.footnote)
-                                .foregroundStyle(HT.orange)
-                                .htCard()
+                            startButton
                         }
-
-                        startButton
                     }
-                    .padding(.horizontal, 18)
+                    .htReadableWidth(HTLayout.setupMaxWidth)
+                    .htPagePadding()
                     .padding(.bottom, 28)
                 }
             }
             .navigationBarHidden(true)
+            .fullScreenCover(isPresented: $showSession) {
+                LiveVoiceSessionView(model: model)
+            }
             .sheet(isPresented: $showTopicPicker) {
                 TopicPickerView(selectedId: model.setup.topicPresetId) { preset in
                     model.applyPreset(preset)
                 }
-            }
-            .fullScreenCover(isPresented: $showSession) {
-                LiveVoiceSessionView(model: model)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
             }
         }
     }

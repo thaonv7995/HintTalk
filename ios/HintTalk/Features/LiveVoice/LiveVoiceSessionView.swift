@@ -3,6 +3,7 @@ import UIKit
 
 /// Full-screen live session: orb + mic, AI caption with Vietnamese, hint card, repair card.
 struct LiveVoiceSessionView: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Bindable var model: LiveVoiceViewModel
     @Environment(\.dismiss) private var dismiss
     @State private var showScene = false
@@ -14,39 +15,20 @@ struct LiveVoiceSessionView: View {
 
             VStack(spacing: 0) {
                 header
-                    .padding(.horizontal, 16)
+                    .htPagePadding()
                     .padding(.top, 8)
 
-                ScrollView {
-                    VStack(spacing: 16) {
-                        if model.phase == .connecting {
-                            connectingBadge
-                        }
-
-                        if model.reconnecting {
-                            reconnectingBadge
-                        }
-
-                        orbSection
-
-                        captionSection
-
-                        if let repair = model.repair {
-                            repairCard(repair)
-                        }
-
-                        // Web hides the hint rail entirely in casual companion mode.
-                        if !SettingsStore.shared.casualCompanionMode {
-                            hintSection
-                        }
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 20)
+                if HTLayout.isRegularWidth(horizontalSizeClass) {
+                    regularWidthBody
+                } else {
+                    compactWidthBody
                 }
 
-                micBar
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 12)
+                if !HTLayout.isRegularWidth(horizontalSizeClass) {
+                    micBar
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, 12)
+                }
             }
 
             if let error = model.errorMessage, model.phase != .live {
@@ -61,6 +43,83 @@ struct LiveVoiceSessionView: View {
             if new == .open, old != .muted {
                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
             }
+        }
+    }
+
+    // MARK: Layout
+
+    private var compactWidthBody: some View {
+        ScrollView {
+            sessionContentStack
+                .htPagePadding()
+                .padding(.bottom, 20)
+        }
+    }
+
+    private var regularWidthBody: some View {
+        ScrollView {
+            VStack(spacing: 16) {
+                statusBadges
+
+                if SettingsStore.shared.casualCompanionMode {
+                    HStack(alignment: .top, spacing: 24) {
+                        captionSection
+                            .frame(maxWidth: .infinity)
+                        VStack(spacing: 12) {
+                            orbSection(height: 280)
+                            micBar
+                        }
+                        .frame(width: 300)
+                    }
+                } else {
+                    HStack(alignment: .top, spacing: 20) {
+                        VStack(spacing: 16) {
+                            captionSection
+                            if let repair = model.repair {
+                                repairCard(repair)
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+
+                        VStack(spacing: 12) {
+                            orbSection(height: 280)
+                            micBar
+                        }
+                        .frame(width: 300)
+
+                        hintSection
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+            }
+            .htReadableWidth(HTLayout.sessionMaxWidth)
+            .htPagePadding()
+            .padding(.bottom, 24)
+        }
+    }
+
+    @ViewBuilder
+    private var sessionContentStack: some View {
+        VStack(spacing: 16) {
+            statusBadges
+            orbSection(height: 230)
+            captionSection
+            if let repair = model.repair {
+                repairCard(repair)
+            }
+            if !SettingsStore.shared.casualCompanionMode {
+                hintSection
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var statusBadges: some View {
+        if model.phase == .connecting {
+            connectingBadge
+        }
+        if model.reconnecting {
+            reconnectingBadge
         }
     }
 
@@ -141,13 +200,13 @@ struct LiveVoiceSessionView: View {
 
     // MARK: Orb
 
-    private var orbSection: some View {
+    private func orbSection(height: CGFloat) -> some View {
         OrbView(
             level: max(model.inputLevel, model.outputLevel),
             aiSpeaking: model.micState == .aiSpeaking,
             idle: model.phase != .live
         )
-        .frame(height: 230)
+        .frame(height: height)
         .accessibilityHidden(true)
     }
 

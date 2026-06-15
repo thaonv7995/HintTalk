@@ -4,6 +4,7 @@ import UIKit
 /// First-launch welcome: explains the app and gets the OpenAI key in place,
 /// so new users aren't dropped into an empty app that silently can't connect.
 struct OnboardingView: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var settings = SettingsStore.shared
     @State private var apiKey = ""
     var onDone: () -> Void
@@ -17,7 +18,7 @@ struct OnboardingView: View {
                     VStack(alignment: .leading, spacing: 28) {
                         VStack(alignment: .leading, spacing: 8) {
                             Image(systemName: "waveform.and.person.filled")
-                                .font(.system(size: 44))
+                                .font(.system(size: HTLayout.isRegularWidth(horizontalSizeClass) ? 52 : 44))
                                 .foregroundStyle(HT.teal)
                             Text("Welcome to HintTalk")
                                 .font(.system(.largeTitle, design: .rounded).weight(.bold))
@@ -26,27 +27,52 @@ struct OnboardingView: View {
                                 .font(.callout)
                                 .foregroundStyle(HT.textDim)
                         }
-                        .padding(.top, 40)
+                        .padding(.top, HTLayout.isRegularWidth(horizontalSizeClass) ? 56 : 40)
 
-                        VStack(alignment: .leading, spacing: 18) {
-                            featureRow(
-                                icon: "person.wave.2.fill",
-                                color: HT.teal,
-                                title: "Live role-play",
-                                detail: "Order coffee, ace an interview, chat with a stranger — real voice conversations."
-                            )
-                            featureRow(
-                                icon: "lightbulb.fill",
-                                color: HT.gold,
-                                title: "Hints when you're stuck",
-                                detail: "Suggestions for what to say next, plus gentle fixes for your sentences."
-                            )
-                            featureRow(
-                                icon: "repeat.circle.fill",
-                                color: HT.mint,
-                                title: "Shadowing",
-                                detail: "Listen, repeat, and get accuracy + pace feedback on every line."
-                            )
+                        if HTLayout.isRegularWidth(horizontalSizeClass) {
+                            HStack(alignment: .top, spacing: 24) {
+                                VStack(alignment: .leading, spacing: 18) {
+                                    featureRow(
+                                        icon: "person.wave.2.fill",
+                                        color: HT.teal,
+                                        title: "Live role-play",
+                                        detail: "Order coffee, ace an interview, chat with a stranger — real voice conversations."
+                                    )
+                                    featureRow(
+                                        icon: "lightbulb.fill",
+                                        color: HT.gold,
+                                        title: "Hints when you're stuck",
+                                        detail: "Suggestions for what to say next, plus gentle fixes for your sentences."
+                                    )
+                                }
+                                featureRow(
+                                    icon: "repeat.circle.fill",
+                                    color: HT.mint,
+                                    title: "Shadowing",
+                                    detail: "Listen, repeat, and get accuracy + pace feedback on every line."
+                                )
+                            }
+                        } else {
+                            VStack(alignment: .leading, spacing: 18) {
+                                featureRow(
+                                    icon: "person.wave.2.fill",
+                                    color: HT.teal,
+                                    title: "Live role-play",
+                                    detail: "Order coffee, ace an interview, chat with a stranger — real voice conversations."
+                                )
+                                featureRow(
+                                    icon: "lightbulb.fill",
+                                    color: HT.gold,
+                                    title: "Hints when you're stuck",
+                                    detail: "Suggestions for what to say next, plus gentle fixes for your sentences."
+                                )
+                                featureRow(
+                                    icon: "repeat.circle.fill",
+                                    color: HT.mint,
+                                    title: "Shadowing",
+                                    detail: "Listen, repeat, and get accuracy + pace feedback on every line."
+                                )
+                            }
                         }
 
                         VStack(alignment: .leading, spacing: 10) {
@@ -87,7 +113,8 @@ struct OnboardingView: View {
                                 .foregroundStyle(HT.textDim)
                         }
                     }
-                    .padding(.horizontal, 24)
+                    .htReadableWidth(680)
+                    .htPagePadding()
                     .padding(.bottom, 16)
                 }
 
@@ -114,7 +141,8 @@ struct OnboardingView: View {
                             .foregroundStyle(HT.textDim)
                     }
                 }
-                .padding(.horizontal, 24)
+                .htReadableWidth(680)
+                .htPagePadding()
                 .padding(.bottom, 16)
             }
         }

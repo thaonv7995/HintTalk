@@ -70,6 +70,7 @@ struct HistoryView: View {
             }
             .background(HT.pageGradient.ignoresSafeArea())
             .navigationTitle("History")
+            .htReadableWidth(HTLayout.listMaxWidth)
         }
     }
 
@@ -117,6 +118,7 @@ struct HistoryView: View {
 
 /// Chat-style transcript with per-line audio playback for speaking review.
 struct SessionDetailView: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     let session: PracticeSession
     @State private var player = ConversationPlayer()
 
@@ -138,9 +140,10 @@ struct SessionDetailView: View {
                             .id(turn.id)
                     }
                 }
-                .padding(.horizontal, 14)
+                .htPagePadding()
                 .padding(.bottom, 24)
             }
+            .htReadableWidth(HTLayout.listMaxWidth)
             .onChange(of: player.playingTurnId) { _, turnId in
                 if let turnId, player.isPlayingAll {
                     withAnimation { proxy.scrollTo(turnId, anchor: .center) }
@@ -196,7 +199,7 @@ struct SessionDetailView: View {
         let hasAudio = AudioStore.exists(turn.audioFile)
 
         HStack(alignment: .bottom, spacing: 8) {
-            if isUser { Spacer(minLength: 40) }
+            if isUser { Spacer(minLength: HTLayout.isRegularWidth(horizontalSizeClass) ? 80 : 40) }
 
             VStack(alignment: isUser ? .trailing : .leading, spacing: 5) {
                 HStack(spacing: 6) {
@@ -236,8 +239,9 @@ struct SessionDetailView: View {
                         )
                 )
             }
+            .frame(maxWidth: HTLayout.transcriptBubbleMaxWidth, alignment: isUser ? .trailing : .leading)
 
-            if !isUser { Spacer(minLength: 40) }
+            if !isUser { Spacer(minLength: HTLayout.isRegularWidth(horizontalSizeClass) ? 80 : 40) }
         }
         .frame(maxWidth: .infinity, alignment: isUser ? .trailing : .leading)
     }

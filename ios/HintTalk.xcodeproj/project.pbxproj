@@ -38,6 +38,7 @@
 		ECDD149198B90C0E2711BCE6 /* LiveVoiceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB45701C165B34E45BDC23D0 /* LiveVoiceView.swift */; };
 		EE8347799B0899D1F01C0D01 /* ShadowingScorer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9ABD925E7A8880211FE12066 /* ShadowingScorer.swift */; };
 		EEDE8C08905A9A77D3203A6C /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE3FA91A0FD5306C62CC8DB8 /* Theme.swift */; };
+		F8DB0D71ED25FADA01B10BFB /* HTLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCF9040334742419D21AF6CD /* HTLayout.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -68,6 +69,7 @@
 		B11A92CEE03724F2ECDB8F9C /* ConversationPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationPlayer.swift; sourceTree = "<group>"; };
 		B91908843905C306810A1535 /* HintTalkApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HintTalkApp.swift; sourceTree = "<group>"; };
 		CB7A35C8F55729F2C05F7869 /* Keychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Keychain.swift; sourceTree = "<group>"; };
+		DCF9040334742419D21AF6CD /* HTLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTLayout.swift; sourceTree = "<group>"; };
 		E2CF07D25C4E636DECAEF33B /* AudioSessionCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSessionCoordinator.swift; sourceTree = "<group>"; };
 		E8E02CCD8419093ACB176F72 /* OrbView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrbView.swift; sourceTree = "<group>"; };
 		EB45701C165B34E45BDC23D0 /* LiveVoiceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveVoiceView.swift; sourceTree = "<group>"; };
@@ -177,6 +179,7 @@
 		77ACE90A08E431B826F7822D /* Theme */ = {
 			isa = PBXGroup;
 			children = (
+				DCF9040334742419D21AF6CD /* HTLayout.swift */,
 				FE3FA91A0FD5306C62CC8DB8 /* Theme.swift */,
 			);
 			path = Theme;
@@ -346,6 +349,7 @@
 				BA6CC3227A06334B6EDA2826 /* AudioStore.swift in Sources */,
 				94C5DAF4DB3B8BE60A0C1C8A /* ChatCompletionClient.swift in Sources */,
 				1E8060C6977EB10718AFAD3C /* ConversationPlayer.swift in Sources */,
+				F8DB0D71ED25FADA01B10BFB /* HTLayout.swift in Sources */,
 				7AA29B2337CF62B20BCBA137 /* HintAgent.swift in Sources */,
 				7A0FD40452E4F0C3E36E885E /* HintTalkApp.swift in Sources */,
 				CD214A7C37C6EEFE727B89E1 /* HistoryView.swift in Sources */,
@@ -513,7 +517,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = app.hinttalk.ios;
 				SDKROOT = iphoneos;
 				SWIFT_STRICT_CONCURRENCY = minimal;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
@@ -532,7 +536,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = app.hinttalk.ios;
 				SDKROOT = iphoneos;
 				SWIFT_STRICT_CONCURRENCY = minimal;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
@@ -546,7 +550,7 @@
 				D8FA142C104A9B776C03A9A0 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Debug;
+			defaultConfigurationName = Release;
 		};
 		497281757907DEB862C4DB5E /* Build configuration list for PBXProject "HintTalk" */ = {
 			isa = XCConfigurationList;
@@ -555,7 +559,7 @@
 				A81D181690E46B07D0566939 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Debug;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
