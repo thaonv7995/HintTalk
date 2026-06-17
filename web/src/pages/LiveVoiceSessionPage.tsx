@@ -1657,6 +1657,45 @@ function LiveVoiceInner({
                   </div>
 
                   <div className="live-session-settings-section">
+                    <p className="live-session-settings-section-title">📚 Voca Dictionary</p>
+                    <label className="live-session-settings-field">
+                      <span className="live-session-settings-label">Bridge URL</span>
+                      <input
+                        type="text"
+                        style={liveFieldSx}
+                        value={settingsDraft.vocaBridgeUrl}
+                        onChange={(e) => patchSettingsDraft({ vocaBridgeUrl: e.target.value })}
+                        placeholder="http://127.0.0.1:22053"
+                        aria-label="Voca Bridge URL"
+                      />
+                    </label>
+                    <label className="live-session-settings-field">
+                      <span className="live-session-settings-label">API token</span>
+                      <input
+                        type="password"
+                        autoComplete="off"
+                        style={liveFieldSx}
+                        value={settingsDraft.vocaApiToken}
+                        onChange={(e) => patchSettingsDraft({ vocaApiToken: e.target.value })}
+                        placeholder="voca_…"
+                        aria-label="Voca API token"
+                      />
+                    </label>
+                    <label className="live-session-settings-field">
+                      <span className="live-session-settings-label">Words / session</span>
+                      <input
+                        type="number"
+                        min={1}
+                        max={8}
+                        style={liveFieldSx}
+                        value={settingsDraft.vocaWordCount}
+                        onChange={(e) => patchSettingsDraft({ vocaWordCount: Math.max(1, Math.min(8, Number(e.target.value) || 4)) })}
+                        aria-label="Voca words per session"
+                      />
+                    </label>
+                  </div>
+
+                  <div className="live-session-settings-section">
                     <p className="live-session-settings-section-title">Shadowing setup</p>
                     <label className="live-session-settings-field">
                       <span className="live-session-settings-label">Passage length</span>
@@ -1796,6 +1835,19 @@ function LiveVoiceInner({
                       <span className="live-session-settings-toggle-title">Repair my sentence</span>
                       <span className="live-session-settings-toggle-desc">
                         For Intermediate and Advanced: AI decides when a spoken line is worth repairing after your turn.
+                      </span>
+                    </span>
+                  </label>
+                  <label className="live-session-settings-toggle">
+                    <input
+                      type="checkbox"
+                      checked={settingsDraft.vocaInjectEnabled}
+                      onChange={(e) => patchSettingsDraft({ vocaInjectEnabled: e.target.checked })}
+                    />
+                    <span className="live-session-settings-toggle-body">
+                      <span className="live-session-settings-toggle-title">📚 Inject vocabulary</span>
+                      <span className="live-session-settings-toggle-desc">
+                        AI may naturally use your Voca Dictionary words in conversation. Shows target words in sidebar.
                       </span>
                     </span>
                   </label>

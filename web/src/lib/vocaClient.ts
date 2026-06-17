@@ -169,7 +169,7 @@ export function formatVocaForAiInstructions(cards: VocaCard[]): string {
     .map((c) => {
       const parts: string[] = [`- "${c.word}"`];
       if (c.partOfSpeech) parts.push(`(${c.partOfSpeech})`);
-      if (c.meaningVi) parts.push(`— ${c.meaningVi}`);
+      if (c.meaningEn) parts.push(`— ${c.meaningEn}`);
       if (c.examples.length) parts.push(`Example: "${c.examples[0]}"`);
       return parts.join(' ');
     })
