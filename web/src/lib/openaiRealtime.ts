@@ -16,6 +16,7 @@ export function buildRealtimeSessionConfig(
   voice: string,
   speaksFirst: LiveVoiceSpeaksFirst = 'ai',
   casualCompanionMode: boolean = false,
+  vocaInjectBlock: string = '',
 ) {
   const openingRules =
     speaksFirst === 'user'
@@ -79,6 +80,7 @@ export function buildRealtimeSessionConfig(
       'The learner may choose any topic or imaginary situation.',
       'Stay in your assigned role; if they switch topic or ask for a new role-play, adapt naturally.',
       ...casualRules,
+      vocaInjectBlock,
       ...openingRules,
     ]
       .filter(Boolean)

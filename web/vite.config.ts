@@ -97,6 +97,11 @@ export default defineConfig({
         secure: true,
         rewrite: (p) => p.replace(/^\/openai/, ''),
       },
+      '/voca-api': {
+        target: 'http://127.0.0.1:22053',
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/voca-api/, ''),
+      },
     },
   },
 });

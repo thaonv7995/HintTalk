@@ -15,6 +15,7 @@ const dist = path.join(__dirname, 'dist');
 const PORT = Number(process.env.PORT || 21079);
 const OPENAI_PROXY_MAX_BODY_BYTES = Number(process.env.OPENAI_PROXY_MAX_BODY_BYTES || 8 * 1024 * 1024);
 const OPENAI_PROXY_TIMEOUT_MS = Number(process.env.OPENAI_PROXY_TIMEOUT_MS || 30000);
+const VOCA_BRIDGE_URL = process.env.VOCA_BRIDGE_URL || 'http://127.0.0.1:22053';
 
 const OPENAI_PROXY_ALLOWED = new Map([
   ['/v1/chat/completions', new Set(['POST'])],
@@ -260,6 +261,70 @@ function proxyGeneric(req, res) {
   });
 }
 
+function proxyVoca(req, res) {
+  let targetBase;
+  try {
+    targetBase = new URL(VOCA_BRIDGE_URL.replace(/\/+$/, ''));
+  } catch {
+    res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Invalid VOCA_BRIDGE_URL');
+    req.resume();
+    return;
+  }
+
+  const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+  const targetPathname = parsedUrl.pathname.replace(/^\/voca-api/, '') || '/';
+  const targetPath = `${targetBase.pathname.replace(/\/+$/, '')}${targetPathname}${parsedUrl.search}`;
+
+  const chunks = [];
+  let size = 0;
+  req.on('data', (c) => {
+    size += c.length;
+    if (size > OPENAI_PROXY_MAX_BODY_BYTES) {
+      res.writeHead(413, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Request body too large');
+      req.destroy();
+      return;
+    }
+    chunks.push(c);
+  });
+
+  req.on('end', () => {
+    if (res.headersSent) return;
+    const body = Buffer.concat(chunks);
+
+    const headers = { ...req.headers };
+    delete headers['host'];
+    delete headers['connection'];
+    delete headers['keep-alive'];
+
+    const targetUrl = new URL(targetPath, targetBase);
+    const clientModule = targetUrl.protocol === 'https:' ? https : http;
+    const opt = {
+      hostname: targetUrl.hostname,
+      port: targetUrl.port || (targetUrl.protocol === 'https:' ? 443 : 80),
+      path: `${targetUrl.pathname}${targetUrl.search}`,
+      method: req.method,
+      headers,
+    };
+
+    const preq = clientModule.request(opt, (pres) => {
+      res.writeHead(pres.statusCode || 502, pres.headers);
+      pres.pipe(res);
+    });
+
+    preq.setTimeout(OPENAI_PROXY_TIMEOUT_MS, () => {
+      preq.destroy(new Error('Voca proxy timeout'));
+    });
+
+    preq.on('error', (e) => {
+      if (res.headersSent) return;
+      res.writeHead(502).end(String(e.message));
+    });
+
+    if (body.length) preq.write(body);
+    preq.end();
+  });
+}
+
 const server = http.createServer((req, res) => {
   if (req.url === '/healthz') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -276,6 +341,10 @@ const server = http.createServer((req, res) => {
   }
   if (req.url.startsWith('/api-proxy')) {
     proxyGeneric(req, res);
+    return;
+  }
+  if (req.url.startsWith('/voca-api')) {
+    proxyVoca(req, res);
     return;
   }
   sendStatic(req, res);

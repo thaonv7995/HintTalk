@@ -3,6 +3,7 @@ import { loadSettings, saveSettings } from '../lib/storage';
 import type { StoredSettings } from '../types';
 import { modelsListUrl } from '../lib/endpoints';
 import { TTS_VOICE_MODELS } from '../data/ttsVoiceModels';
+import { checkVocaHealth } from '../lib/vocaClient';
 
 function formatSyncedAt(ts: number): string {
   try {
@@ -20,6 +21,7 @@ export function SettingsPage() {
   const [settings, setSettings] = useState<StoredSettings>(() => loadSettings());
   const [lastSavedSettings, setLastSavedSettings] = useState<StoredSettings>(() => loadSettings());
   const [hintCheck, setHintCheck] = useState<'idle' | 'checking' | 'ok' | 'fail'>('idle');
+  const [vocaCheck, setVocaCheck] = useState<'idle' | 'checking' | 'ok' | 'fail'>('idle');
   const [saveBanner, setSaveBanner] = useState<'idle' | 'ok' | 'err'>('idle');
   const [saveAck, setSaveAck] = useState(false);
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
@@ -254,6 +256,57 @@ export function SettingsPage() {
           ) : null}
         </article>
 
+        <article className="settings-box">
+          <p className="eyebrow">Vocabulary</p>
+          <h3>Voca Dictionary</h3>
+          <p className="settings-help">
+            Connect to the Voca Bridge API to inject your vocabulary words into live voice conversations.
+            Run <code>npm run dev:all</code> or <code>npm run voca:api</code> in the voca-dictionary project.
+          </p>
+          <label className="settings-field">
+            <span className="settings-label">Bridge URL</span>
+            <input value={settings.vocaBridgeUrl} onChange={(e) => updateField({ vocaBridgeUrl: e.target.value })} placeholder="http://127.0.0.1:22053" />
+          </label>
+          <label className="settings-field">
+            <span className="settings-label">API token</span>
+            <input type="password" autoComplete="off" value={settings.vocaApiToken} onChange={(e) => updateField({ vocaApiToken: e.target.value })} placeholder="voca_…" />
+          </label>
+          <label className="settings-field">
+            <span className="settings-label">Words per session</span>
+            <input
+              type="number"
+              min={1}
+              max={8}
+              value={settings.vocaWordCount}
+              onChange={(e) => updateField({ vocaWordCount: Math.max(1, Math.min(8, Number(e.target.value) || 4)) })}
+            />
+          </label>
+          <button
+            type="button"
+            className="soft settings-inline-btn settings-inline-btn--with-spinner"
+            disabled={vocaCheck === 'checking'}
+            aria-busy={vocaCheck === 'checking'}
+            onClick={() => {
+              setVocaCheck('checking');
+              void checkVocaHealth(settings.vocaApiToken).then((ok) => setVocaCheck(ok ? 'ok' : 'fail'));
+            }}
+          >
+            {vocaCheck === 'checking' ? (
+              <>
+                <span className="settings-spinner" aria-hidden />
+                Checking…
+              </>
+            ) : (
+              'Check connection'
+            )}
+          </button>
+          {vocaCheck === 'ok' ? (
+            <p className="settings-status-msg settings-status-msg--ok">Voca Bridge reachable.</p>
+          ) : vocaCheck === 'fail' ? (
+            <p className="settings-status-msg settings-status-msg--err">Cannot reach Voca Bridge (is it running?).</p>
+          ) : null}
+        </article>
+
         <article className="settings-box settings-box--prefs">
           <p className="eyebrow">Practice</p>
           <h3>Preferences</h3>
@@ -261,6 +314,22 @@ export function SettingsPage() {
             Fine-tune the practice UI and live voice. Changes apply on the next screen load where relevant.
           </p>
           <ul className="settings-pref-list">
+            <li>
+              <label className="settings-pref-row">
+                <input
+                  type="checkbox"
+                  className="settings-pref-input"
+                  checked={settings.vocaInjectEnabled}
+                  onChange={(e) => updateField({ vocaInjectEnabled: e.target.checked })}
+                />
+                <span className="settings-pref-body">
+                  <span className="settings-pref-title">📚 Inject vocabulary into conversations</span>
+                  <span className="settings-pref-desc">
+                    In Live Voice, the AI partner naturally weaves your Voca Dictionary words into conversation. Requires Voca Bridge running.
+                  </span>
+                </span>
+              </label>
+            </li>
             <li>
               <label className="settings-pref-row">
                 <input

@@ -43,6 +43,8 @@ type RealtimeOpts = {
   remoteAudioRef: RefObject<HTMLAudioElement | null>;
   onAiLineComplete?: (text: string) => void;
   onUserTranscript?: (text: string) => void;
+  /** Pre-built vocabulary instruction block for Realtime AI session. */
+  vocaInjectBlock?: string;
 };
 
 export function useRealtimeVoice({
@@ -59,6 +61,7 @@ export function useRealtimeVoice({
   remoteAudioRef,
   onAiLineComplete,
   onUserTranscript,
+  vocaInjectBlock = '',
 }: RealtimeOpts) {
   const [uiStatus, setUiStatus] = useState<LiveUiStatus>('idle');
   const [statusLine, setStatusLine] = useState('');
@@ -415,7 +418,7 @@ export function useRealtimeVoice({
       dc.onopen = () => {
         pushLog('Data channel open');
         try {
-          const config = buildRealtimeSessionConfig(scenario, level, voice, speaksFirst, casualCompanionMode);
+          const config = buildRealtimeSessionConfig(scenario, level, voice, speaksFirst, casualCompanionMode, vocaInjectBlock);
           dc.send(
             JSON.stringify({
               type: 'session.update',
@@ -469,6 +472,7 @@ export function useRealtimeVoice({
     scenario,
     setupMicLevelMeter,
     speaksFirst,
+    vocaInjectBlock,
     voice,
   ]);
 

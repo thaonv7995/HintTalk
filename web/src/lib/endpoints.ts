@@ -34,3 +34,13 @@ export function audioSpeechUrl(baseUrl: string): string {
   if (u.startsWith('http://') || u.startsWith('https://')) return '/api-proxy/audio/speech';
   return '/tts/audio/speech';
 }
+
+/** Voca Bridge API: fetch all vocabulary cards. */
+export function vocaCardsUrl(): string {
+  return '/voca-api/v1/cards';
+}
+
+/** Voca Bridge API: health check. */
+export function vocaHealthUrl(): string {
+  return '/voca-api/v1/health';
+}

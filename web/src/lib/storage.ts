@@ -88,6 +88,10 @@ const defaultSettings: StoredSettings = {
   liveVoiceMicHandsFree: true,
   repairMySentence: true,
   casualCompanionMode: false,
+  vocaBridgeUrl: 'http://127.0.0.1:22053',
+  vocaApiToken: 'voca_55c2ac41266be58e43d0ef2b5817b4c9053a2ed7410fcefd',
+  vocaInjectEnabled: false,
+  vocaWordCount: 4,
 };
 
 export function loadSettings(): StoredSettings {

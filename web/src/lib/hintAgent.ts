@@ -48,6 +48,10 @@ const HINT_AGENT_SYSTEM_PROMPT = [
   '- **beginner**, **intermediate**, **advanced**: all **empty []** except the one matching **targetHintLevel**.',
   '- **usefulPhrases**: **always []** (do not use this field).',
   '',
+  '# Vocabulary context (optional)',
+  'If **vocaTargetWords** is present and non-empty, the learner is studying those words.',
+  'You may optionally prefer phrasing that uses one of them — but only if it fits naturally. Do not force vocabulary into the hint.',
+  '',
   '# Style per level',
   '- **beginner**: one natural full sentence (or two short paragraphs with \\n\\n).',
   '- **intermediate**: **only** a handful of **English words or short phrases** (ideas / vocabulary / chunks) the learner might use — **not** a sentence template. Pack **3–8** fragments into **one string**, separated by ** · ** (middle dot + spaces). Example shape: `sorry · running late · just arriving · platform change`. **Forbidden**: blanks, underscores (`___`), brackets with dots, gap-fill, or “complete the sentence”. No full sample dialogue sentence.',
@@ -138,6 +142,7 @@ export function hintsBlockAtLevel(h: HintPayload, level: HintLevel): string {
 export type GenerateHintOptions = {
   speaksFirst?: LiveVoiceSpeaksFirst;
   signal?: AbortSignal;
+  vocaTargetWords?: string[];
 };
 
 export async function generateHintPayload(
@@ -187,6 +192,7 @@ export async function generateHintPayload(
       maxSuggestionCards: MAX_HINT_PANELS,
       maxUsefulPhraseLines: 0,
     },
+    vocaTargetWords: options?.vocaTargetWords ?? [],
   };
 
   const messages: ChatMsg[] = [

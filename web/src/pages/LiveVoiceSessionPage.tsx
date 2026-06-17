@@ -18,7 +18,32 @@ import { liveVoiceScriptTitleLine } from '../lib/liveVoiceMeta';
 import { buildScenarioFromLiveSetup, FREE_VOICE_SCENARIO_ID } from '../lib/liveVoiceFreeScenario';
 import { translateLineToVi } from '../lib/translateLineVi';
 import { modelsListUrl } from '../lib/endpoints';
+import { fetchVocaCards, pickRandomVocaWords, formatVocaForAiInstructions, vocaWordsForHintPayload, type VocaCard } from '../lib/vocaClient';
 import { evaluateRepairOpportunity, shouldShowRepairDecision } from '../lib/repairAgent';
+
+/**
+ * Highlight vocabulary words inside a text string.
+ * Returns an array of ReactNode (strings and <mark> elements).
+ */
+function highlightVocaWords(text: string, vocaWords: VocaCard[]): (string | JSX.Element)[] {
+  if (!vocaWords.length || !text.trim()) return [text];
+
+  // Build a regex that matches any of the vocab words (case-insensitive, whole-word when possible)
+  const escaped = vocaWords.map((w) => w.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  // Sort longest first so multi-word phrases match before single words
+  escaped.sort((a, b) => b.length - a.length);
+  const pattern = new RegExp(`(${escaped.join('|')})`, 'gi');
+
+  const parts = text.split(pattern);
+  const lowerSet = new Set(vocaWords.map((w) => w.word.toLowerCase()));
+
+  return parts.map((part, i) => {
+    if (lowerSet.has(part.toLowerCase())) {
+      return <mark key={i} className="voca-highlight">{part}</mark>;
+    }
+    return part;
+  });
+}
 
 const liveFieldSx: CSSProperties = {
   width: '100%',
@@ -434,6 +459,11 @@ function LiveVoiceInner({
   const topicPickerCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [reloadIconSpinning, setReloadIconSpinning] = useState(false);
 
+  /* ---- Voca vocabulary integration ---- */
+  const [vocaActiveWords, setVocaActiveWords] = useState<VocaCard[]>([]);
+  const [vocaLoading, setVocaLoading] = useState(false);
+  const vocaFetchedRef = useRef(false);
+
   const openLiveSettings = useCallback(() => {
     setSettingsDraft(settings);
     setSettingsConnectionCheck({ realtime: 'idle', hint: 'idle' });
@@ -563,6 +593,37 @@ function LiveVoiceInner({
     return () => window.clearTimeout(id);
   }, [reloadIconSpinning]);
 
+  /* ---- Voca: fetch cards once when settings.vocaInjectEnabled is on ---- */
+  useEffect(() => {
+    if (!settings.vocaInjectEnabled || vocaFetchedRef.current) return;
+    vocaFetchedRef.current = true;
+    const ac = new AbortController();
+    setVocaLoading(true);
+    void (async () => {
+      try {
+        const allCards = await fetchVocaCards(settings.vocaApiToken, ac.signal);
+        const picked = pickRandomVocaWords(allCards, settings.vocaWordCount);
+        setVocaActiveWords(picked);
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === 'AbortError') return;
+        // silent — voca is optional
+      } finally {
+        setVocaLoading(false);
+      }
+    })();
+    return () => ac.abort();
+  }, [settings.vocaInjectEnabled, settings.vocaApiToken, settings.vocaWordCount]);
+
+  const vocaInjectBlock = useMemo(
+    () => (settings.vocaInjectEnabled ? formatVocaForAiInstructions(vocaActiveWords) : ''),
+    [settings.vocaInjectEnabled, vocaActiveWords],
+  );
+
+  const vocaTargetWordsList = useMemo(
+    () => (settings.vocaInjectEnabled ? vocaWordsForHintPayload(vocaActiveWords) : []),
+    [settings.vocaInjectEnabled, vocaActiveWords],
+  );
+
   const hintEnJoined = useMemo(() => {
     if (!hintPack) return '';
     return hintPanelsAtLevel(hintPack, launch.level)
@@ -625,6 +686,7 @@ function LiveVoiceInner({
         const h = await generateHintPayload(settings, scenario, launch.level, turns, latestAiLine, {
           speaksFirst: setup.speaksFirst,
           signal: controller.signal,
+          vocaTargetWords: vocaTargetWordsList.length ? vocaTargetWordsList : undefined,
         });
         if (gen !== hintRefreshGenRef.current) return;
         setHintPack(h);
@@ -640,7 +702,7 @@ function LiveVoiceInner({
         if (gen === hintRefreshGenRef.current) setHintLoading(false);
       }
     },
-    [scenario, settings, launch.level, setup.speaksFirst],
+    [scenario, settings, launch.level, setup.speaksFirst, vocaTargetWordsList],
   );
 
   const maybeEvaluateRepair = useCallback(
@@ -721,6 +783,7 @@ function LiveVoiceInner({
     cooldownSeconds: settings.realtimeCooldownSeconds,
     micHandsFree: settings.liveVoiceMicHandsFree,
     casualCompanionMode: settings.casualCompanionMode,
+    vocaInjectBlock,
     remoteAudioRef,
     onAiLineComplete: (t) => {
       latestAiLineRef.current = t;
@@ -1856,7 +1919,7 @@ function LiveVoiceInner({
                     <span className="live-voice-caption-tag-key">Assistant speaks as</span>
                     <span className="live-voice-caption-tag-value">{scenario.aiRole}</span>
                   </span>
-                  <p className="live-ai-line">{voice.aiCaption}</p>
+                  <p className="live-ai-line">{settings.vocaInjectEnabled && vocaActiveWords.length ? highlightVocaWords(voice.aiCaption, vocaActiveWords) : voice.aiCaption}</p>
                   {settings.showLiveVoiceAiCaptionVi && aiCaptionVi ? (
                     <p className="live-voice-line-vi">{aiCaptionVi}</p>
                   ) : null}
@@ -2113,6 +2176,32 @@ function LiveVoiceInner({
                   </div>
                 );
               })()}
+
+              {/* ---- Voca vocabulary widget ---- */}
+              {settings.vocaInjectEnabled && vocaActiveWords.length > 0 ? (
+                <div className="voca-sidebar-widget">
+                  <span className="live-voice-caption-tag voca-widget-tag">📚 Vocab target</span>
+                  <ul className="voca-word-list">
+                    {vocaActiveWords.map((vc) => (
+                      <li key={vc.slug} className="voca-word-item">
+                        <span className="voca-word-chip">{vc.word}</span>
+                        {vc.pronunciation ? (
+                          <span className="voca-word-ipa">{vc.pronunciation}</span>
+                        ) : null}
+                        {vc.meaningVi ? (
+                          <span className="voca-word-meaning">{vc.meaningVi}</span>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+              {vocaLoading ? (
+                <div className="voca-sidebar-widget">
+                  <span className="live-voice-caption-tag voca-widget-tag">📚 Vocab</span>
+                  <p className="voca-word-meaning" style={{ padding: '8px 0' }}>Loading vocabulary…</p>
+                </div>
+              ) : null}
             </aside>
           ) : null}
         </div>

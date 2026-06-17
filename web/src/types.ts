@@ -107,6 +107,14 @@ export type StoredSettings = {
   repairMySentence: boolean;
   /** Live voice: Casual companion mode with no-stress implicit recasting and code-switching */
   casualCompanionMode: boolean;
+  /** Voca Dictionary Bridge base URL (default http://127.0.0.1:22053) */
+  vocaBridgeUrl: string;
+  /** Voca API bearer token for authentication */
+  vocaApiToken: string;
+  /** Enable vocabulary injection into live voice conversations */
+  vocaInjectEnabled: boolean;
+  /** Number of random words to inject per session (1–8) */
+  vocaWordCount: number;
 };
 
 export type RepairDecision = {
